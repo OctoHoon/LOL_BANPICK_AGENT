@@ -218,3 +218,26 @@ test('조합 특성 표의 id가 모두 챔피언 표에 있다', async () => {
   const { TRAITS } = await import('../data/traits.js');
   for (const ids of Object.values(TRAITS)) for (const id of ids) assert.ok(champMap.has(id), id);
 });
+
+test('조합 색깔 판정과 색깔 대응', async () => {
+  const { compIdentity, compSummary } = await import('../logic.js');
+  assert.equal(compIdentity(['Zed', 'Khazix', 'Ornn']).main, 'dive');
+  assert.equal(compIdentity(['Jinx']).main, null);
+  // 우리 원딜이 징크스면 보호형 서포터 가산
+  assert.ok(compReasons('Lulu', [], ['Jinx'], champMap).reasons.some((x) => x.startsWith('우리 캐리(징크스) 보호')));
+  // 상대가 보호형이면 포킹 가산
+  assert.ok(compReasons('Xerath', ['Jinx', 'Lulu'], [], champMap).reasons.some((x) => x.includes('포킹에 약함')));
+  // CC 등급이 있으면 수동 목록보다 우선
+  const m = new Map(champMap); m.set('Ahri', { ...champMap.get('Ahri'), cc: 3 });
+  assert.equal(compSummary(['Ahri'], m).cc.length, 1);
+  assert.equal(compSummary(['Ahri'], champMap).cc.length, 0);
+  // 가감점 상한
+  assert.ok(compReasons('Lulu', ['Zed', 'Khazix', 'Vi', 'Talon', 'Jinx'], ['Jinx'], champMap).score <= 15);
+});
+
+test('성향 등급 파싱', async () => {
+  const { pickAttrs } = await import('../scripts/champ-attrs.mjs');
+  assert.deepEqual(pickAttrs({ playstyleInfo: { damage: 3, durability: 1, crowdControl: 2, mobility: 3, utility: 1 }, tacticalInfo: { damageType: 'kMagic' } }),
+    { cc: 2, mob: 3, dur: 1, dmgR: 3, util: 1, dmgType: 'AP' });
+  assert.equal(pickAttrs({}), null);
+});

@@ -6,6 +6,12 @@
 // engage   : 한타를 강제로 여는 이니시에이터
 // tankshred: 체력 비례·고정 피해로 탱커를 잘 녹이는 챔피언
 // poke     : 멀리서 견제하는 포킹 챔피언
+// pick     : 한 명을 묶어 끊어먹는 데 강한 챔피언(긴 사거리 CC, 기습)
+// split    : 혼자 사이드 라인을 밀며 1대1을 이기는 챔피언
+// protect  : 아군 캐리를 지키는 보호·회복형 서포터
+// hypercarry: 성장하면 한타를 혼자 책임지는 후반 캐리
+// aoe      : 이니시 뒤에 광역 피해·광역 CC로 한타를 터뜨리는 챔피언
+// cc       : 확실한 하드 CC(기절·속박·에어본 등)가 있는 챔피언. Riot 클라이언트 CC 등급(data/champ-attrs.json)이 있으면 그쪽을 우선한다.
 export const TRAITS = {
   dive: [
     'Akali', 'Ahri', 'Ambessa', 'Belveth', 'Briar', 'Camille', 'Diana', 'Ekko', 'Evelynn', 'Fizz',
@@ -30,6 +36,41 @@ export const TRAITS = {
     'Caitlyn', 'Corki', 'Ezreal', 'Hwei', 'Jayce', 'Karma', 'Lux', 'Nidalee', 'Varus', 'Velkoz',
     'Xerath', 'Ziggs', 'Zoe',
   ],
+  pick: [
+    'Ahri', 'Ashe', 'Bard', 'Blitzcrank', 'Elise', 'Evelynn', 'Jhin', 'Leblanc', 'Lux', 'Morgana', 'Nautilus',
+    'Neeko', 'Nocturne', 'Pyke', 'Rengar', 'Thresh', 'TwistedFate', 'Varus', 'Zoe',
+  ],
+  split: [
+    'Camille', 'Fiora', 'Gwen', 'Illaoi', 'Jax', 'Kayle', 'Nasus', 'Quinn', 'Riven', 'Shen', 'Trundle',
+    'Tryndamere', 'Yorick',
+  ],
+  protect: [
+    'Braum', 'Ivern', 'Janna', 'Karma', 'Lulu', 'Milio', 'Nami', 'Renata', 'Seraphine', 'Sona', 'Soraka',
+    'Taric', 'Yuumi', 'Zilean',
+  ],
+  hypercarry: [
+    'Aphelios', 'Jinx', 'Kaisa', 'Kayle', 'KogMaw', 'Smolder', 'Twitch', 'Vayne', 'Xayah', 'Zeri',
+  ],
+  aoe: [
+    'Amumu', 'Annie', 'Diana', 'Fiddlesticks', 'Galio', 'Kennen', 'Malphite', 'MissFortune', 'MonkeyKing',
+    'Orianna', 'Rumble', 'Seraphine', 'Sona', 'Yasuo',
+  ],
+  cc: [
+    'Alistar', 'Amumu', 'Annie', 'Ashe', 'Blitzcrank', 'Braum', 'Galio', 'Gragas', 'JarvanIV', 'Kennen',
+    'Leona', 'Lissandra', 'Malphite', 'Maokai', 'Morgana', 'Nautilus', 'Neeko', 'Nunu', 'Ornn', 'Poppy', 'Rakan',
+    'Rammus', 'Rell', 'Sejuani', 'Sion', 'Skarner', 'Taric', 'Thresh', 'TwistedFate', 'Veigar', 'Vi', 'Zac',
+    'Zyra', 'Lux', 'Xerath', 'Varus', 'Vex', 'Annie', 'Pantheon', 'Jax', 'Warwick', 'Volibear', 'Udyr',
+  ],
+};
+
+// 조합 색깔. 각 색깔에 기여하는 특성과 이름.
+export const IDENTITIES = {
+  engage: { label: '한타 이니시형', traits: ['engage', 'aoe'] },
+  dive: { label: '돌진형', traits: ['dive'] },
+  poke: { label: '포킹·공성형', traits: ['poke'] },
+  protect: { label: '캐리 보호형', traits: ['protect', 'hypercarry'] },
+  split: { label: '스플릿형', traits: ['split'] },
+  pick: { label: '끊어먹기형', traits: ['pick'] },
 };
 
 export const TRAIT_SETS = Object.fromEntries(Object.entries(TRAITS).map(([k, v]) => [k, new Set(v)]));

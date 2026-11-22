@@ -1,5 +1,5 @@
 // 밴픽 순서와 추천 계산. 화면 코드와 분리해 node 로도 시험할 수 있게 했다.
-import { TRAIT_SETS } from './data/traits.js';
+import { TRAIT_SETS, IDENTITIES } from './data/traits.js';
 
 export const ROLES = [
   { id: 'top', label: '탑' },
@@ -215,42 +215,74 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
 }
 
 // ---------- 조합 규칙(data/traits.js) ----------
-// 통계와 별개로, 상대·우리 조합 성향을 보고 대응 챔피언에 가산점을 준다.
-export function compSummary(champIds, champMap) {
-  const has = (t) => champIds.filter((id) => TRAIT_SETS[t].has(id));
-  const prof = teamProfile(champIds, champMap);
-  return { dive: has('dive'), poke: has('poke'), engage: has('engage'), front: prof.front, ad: prof.ad, ap: prof.ap, count: champIds.length };
+// 통계와 별개로, 조합 색깔(이니시·돌진·포킹·보호·스플릿·끊어먹기)과 CC를 보고 가감점을 준다.
+// 대응 관계는 해설·분석가들이 흔히 말하는 통념을 따른다. 절대 규칙이 아니라 기울기만 준다.
+const hasTrait = (t, id) => TRAIT_SETS[t].has(id);
+// Riot 클라이언트의 CC 등급(1~3)이 있으면 3을 하드 CC로 보고, 없으면 수동 목록을 쓴다.
+export const isCC = (id, champMap) => {
+  const cc = champMap.get(id)?.cc;
+  return cc != null ? cc >= 3 : hasTrait('cc', id);
+};
+
+export function compIdentity(champIds) {
+  const scores = {};
+  for (const [k, v] of Object.entries(IDENTITIES)) {
+    scores[k] = champIds.filter((id) => v.traits.some((t) => hasTrait(t, id))).length;
+  }
+  const [top, n] = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || [];
+  return { scores, main: n >= 2 ? top : null, label: n >= 2 ? IDENTITIES[top].label : null };
 }
+
+export function compSummary(champIds, champMap) {
+  const has = (t) => champIds.filter((id) => hasTrait(t, id));
+  const prof = teamProfile(champIds, champMap);
+  const id = compIdentity(champIds);
+  return {
+    dive: has('dive'), poke: has('poke'), engage: has('engage'), pick: has('pick'), split: has('split'),
+    protect: has('protect'), hypercarry: has('hypercarry'), aoe: has('aoe'),
+    cc: champIds.filter((x) => isCC(x, champMap)),
+    front: prof.front, ad: prof.ad, ap: prof.ap, count: champIds.length,
+    identity: id.main, identityLabel: id.label,
+  };
+}
+
+const COMP_CAP = 15;
 
 export function compReasons(champ, enemyPicks, ourPicks, champMap) {
   const reasons = [];
   let score = 0;
   const nm = (id) => champMap.get(id)?.name || id;
-  const is = (t) => TRAIT_SETS[t].has(champ);
+  const names = (a) => a.map(nm).join(', ');
+  const is = (t) => hasTrait(t, champ);
+  const add = (d, r) => { score += d; reasons.push(r); };
+
+  // 상대 조합에 대한 대응
   const e = compSummary(enemyPicks, champMap);
-  if (e.dive.length >= 2 && is('antidive')) {
-    const d = Math.min(10, 4 * (e.dive.length - 1));
-    score += d;
-    reasons.push(`상대 돌진 챔피언 ${e.dive.length}명(${e.dive.map(nm).join(', ')})이라 돌진 대응에 좋음`);
+  if (e.dive.length >= 2 && (is('antidive') || is('protect'))) {
+    add(Math.min(10, 4 * (e.dive.length - 1)), `상대 돌진 챔피언 ${e.dive.length}명(${names(e.dive)})이라 돌진 대응에 좋음`);
   }
-  if (e.front >= 2 && is('tankshred')) {
-    score += Math.min(8, 4 * (e.front - 1));
-    reasons.push(`상대 앞라인 ${e.front}명이라 탱커 녹이기에 좋음`);
-  }
-  if (e.poke.length >= 2 && is('engage')) {
-    score += 6;
-    reasons.push(`상대 포킹 조합(${e.poke.map(nm).join(', ')})을 이니시로 끊기 좋음`);
-  }
-  if (e.count >= 3 && e.front === 0 && is('dive')) {
-    score += 5;
-    reasons.push('상대 앞라인이 없어 후방 진입이 쉬움');
-  }
+  if (e.front >= 2 && is('tankshred')) add(Math.min(8, 4 * (e.front - 1)), `상대 앞라인 ${e.front}명이라 탱커 녹이기에 좋음`);
+  if (e.poke.length >= 2 && (is('engage') || is('dive'))) add(6, `상대 포킹 조합(${names(e.poke)})은 거리를 좁혀 붙는 쪽이 유리`);
+  if (e.count >= 3 && e.front === 0 && is('dive')) add(5, '상대 앞라인이 없어 후방 진입이 쉬움');
+  if (e.identity === 'engage' && is('antidive')) add(5, '상대 한타 이니시를 받아치기(디스인게이지) 좋음');
+  if (e.identity === 'protect' && is('poke')) add(5, '상대 캐리 보호 조합은 멀리서 깎아 내는 포킹에 약함');
+  if (e.hypercarry.length && (is('dive') || is('pick'))) add(4, `상대 후반 캐리(${names(e.hypercarry)})를 노리기 좋음`);
+  if (e.identity === 'split' && (is('engage') || is('aoe'))) add(3, '상대가 스플릿하는 동안 4대5 한타 강제');
+
+  // 우리 조합과의 궁합
   const o = compSummary(ourPicks, champMap);
-  if (o.count >= 2 && o.engage.length === 0 && is('engage')) {
-    score += 5;
-    reasons.push('우리 조합에 이니시 부족');
+  if (o.count >= 2 && o.engage.length === 0 && is('engage')) add(5, '우리 조합에 이니시 부족');
+  if (o.identity) {
+    const fits = IDENTITIES[o.identity].traits.some((t) => is(t));
+    if (fits) add(5, `우리 조합 색깔(${o.identityLabel})에 맞음`);
   }
-  return { score, reasons };
+  if (o.hypercarry.length && is('protect')) add(6, `우리 캐리(${names(o.hypercarry)}) 보호`);
+  if (o.protect.length && is('hypercarry')) add(5, `보호형 서포터(${names(o.protect)})와 궁합`);
+  if (o.engage.length && is('aoe') && !is('engage')) add(4, `이니시(${names(o.engage)}) 뒤 광역 피해 연계`);
+  if (o.split.length && is('split')) add(-4, '스플릿 챔피언이 둘이면 한타 인원이 모자라기 쉬움');
+  if (o.count >= 3 && o.cc.length <= 1 && isCC(champ, champMap)) add(4, `우리 조합 CC 부족(${o.cc.length}명)`);
+
+  return { score: Math.max(-COMP_CAP, Math.min(COMP_CAP, score)), reasons };
 }
 
 // 메타 통계로 매기는 가감점: 포지션 승률, 상대 라이너 상성, 바텀 듀오 궁합, 블라인드 픽 위험
@@ -367,6 +399,18 @@ export function recommendBans(state, champMap, limit = 8, meta = null) {
       const wr = smoothWr(g, w, 50);
       const s = presence * 40 + clamp((wr - 0.5) * 150, -6, 6);
       if (s >= 8) add(id, Math.round(s), `상위권 밴픽률 ${pct(presence)}, 승률 ${pct(g ? w / g : 0.5)}`);
+    }
+    // 2차 밴: 상대 조합 색깔을 완성해 줄 인기 챔피언을 막는다
+    const ourSide = team.side;
+    const enemyPicks = sideChampions(actions, seq, ourSide === 'blue' ? 'red' : 'blue', 'pick').filter((s) => s.champ).map((s) => s.champ);
+    const eid = compIdentity(enemyPicks);
+    if (enemyPicks.length && eid.main) {
+      const traits = IDENTITIES[eid.main].traits;
+      for (const [id, c] of Object.entries(meta.champs || {})) {
+        const g = Object.values(c.pos).reduce((a, [x]) => a + x, 0);
+        if ((g + (c.bans || 0)) / meta.games < 0.05) continue;
+        if (traits.some((t) => TRAIT_SETS[t].has(id))) add(id, 8, `상대 조합 색깔(${eid.label}) 완성 저지`);
+      }
     }
     // 아직 픽하지 않은 팀원의 주력 챔피언을 라인전에서 이기는 챔피언
     const filled = new Set(ourAssignments(state).map((a) => a.memberId));

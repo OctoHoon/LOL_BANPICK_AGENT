@@ -167,3 +167,4 @@ details.pool-group > summary { cursor: pointer; padding: 2px 0; }
 .add-row { display: flex; gap: 6px; }
 .add-row select { flex: none; }
 .add-row .add { flex: 1 1 0; width: 0; }
+.ident { color: var(--gold); font-weight: 600; }

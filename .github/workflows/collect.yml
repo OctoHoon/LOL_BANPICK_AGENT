@@ -10,7 +10,7 @@ on:
       mode:
         description: '수집 범위'
         type: choice
-        options: [all, members, meta]
+        options: [all, members, meta, attrs]
         default: all
 
 permissions:
@@ -29,7 +29,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: 챔피언 성향 등급(CC 등)
+        if: ${{ contains(fromJSON('["all","attrs"]'), github.event.inputs.mode || 'all') }}
+        continue-on-error: true
+        run: node scripts/champ-attrs.mjs
       - name: 수집
+        if: ${{ (github.event.inputs.mode || 'all') != 'attrs' }}
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
         run: |
