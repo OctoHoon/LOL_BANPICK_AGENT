@@ -58,7 +58,8 @@ export function makeClient(cfg) {
       if (res.ok) return res.json();
       if (res.status === 404) return null;
       if (res.status === 401) {
-        throw new RiotError(`Riot API가 키를 인식하지 못했습니다(401). 키 형식 확인: 길이 ${KEY.length}자, RGAPI- 로 시작 ${KEY.startsWith('RGAPI-') ? '예' : '아니오'}.`);
+        const body = (await res.text()).slice(0, 200);
+        throw new RiotError(`Riot API가 키를 인식하지 못했습니다(401) ${kind} ${p.split('/').slice(0, 5).join('/')} 응답: ${body} / 키 길이 ${KEY.length}자, RGAPI- 로 시작 ${KEY.startsWith('RGAPI-') ? '예' : '아니오'}`);
       }
       if (res.status === 403) {
         throw new RiotError('Riot API가 키를 거부했습니다(403). 키가 만료됐거나 잘못된 키입니다. 개발용 키는 24시간마다 만료됩니다.');
