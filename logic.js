@@ -197,7 +197,7 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
       if (p.tier === 1 && mainsLeft === 1) { score += 4; reasons.push('남은 주력이 이것뿐이라 밴 전에 확보 권장'); }
 
       if (meta) {
-        const st = statReasons(meta, champMap, role, p.champ, enemyPos, enemyLeft, ourByRole, used);
+        const st = statReasons(meta, champMap, role, p.champ, enemyPos, enemyLeft, ourByRole, used, enemyPicks);
         score += st.score;
         reasons.push(...st.reasons);
       }
@@ -210,7 +210,7 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
 }
 
 // 메타 통계로 매기는 가감점: 포지션 승률, 상대 라이너 상성, 바텀 듀오 궁합, 블라인드 픽 위험
-export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ourByRole, used = new Set()) {
+export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ourByRole, used = new Set(), enemyAll = null) {
   let score = 0;
   const reasons = [];
   const nm = (id) => champMap.get(id)?.name ?? id;
@@ -229,7 +229,7 @@ export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ou
   const enemyHere = Object.entries(enemyPos).find(([, p]) => p === role)?.[0];
   if (enemyHere) {
     const v = laneStat(meta, role, champ, enemyHere);
-    if (v && v.games >= 5) {
+    if (v && v.games >= 3) {
       const wr = smoothWr(v.games, v.wins, 30);
       const d = clamp((wr - 0.5) * 150, -12, 12);
       score += d;
@@ -245,6 +245,38 @@ export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ou
     if (bad.length >= 2) {
       score -= bad.length;
       reasons.push(`카운터 주의: ${bad.map(([e]) => nm(e)).join(', ')}`);
+    }
+  }
+
+  // 상대 조합 전체: 라인 상대를 뺀 나머지 상대 챔피언 각각과의 승률(같은 경기에 있었을 때)
+  const vsRow = meta.vs?.[champ] || {};
+  const vsHits = (enemyAll || Object.keys(enemyPos))
+    .filter((e) => e !== enemyHere && vsRow[e])
+    .map((e) => ({ e, g: vsRow[e][0], w: vsRow[e][1], d: smoothWr(vsRow[e][0], vsRow[e][1], 40) - 0.5 }));
+  if (vsHits.length) {
+    const d = clamp(vsHits.reduce((a, x) => a + x.d, 0) * 120, -10, 10);
+    score += d;
+    if (Math.abs(d) >= 1) {
+      const top = vsHits.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 2);
+      reasons.push(`상대 조합 ${d > 0 ? '유리' : '불리'}: ${top.map((x) => `${nm(x.e)} 상대 ${pct(x.w / x.g)}(${x.g}판)`).join(', ')}`);
+    }
+  }
+
+  // 우리 조합과의 궁합(같은 팀일 때 승률). 원딜·서폿은 아래 듀오에서 따로 본다.
+  const bot = role === 'adc' ? 'support' : role === 'support' ? 'adc' : null;
+  const synHits = Object.entries(ourByRole)
+    .filter(([r]) => r !== bot)
+    .map(([, a]) => {
+      const v = meta.with?.[[a, champ].sort().join('|')];
+      return v ? { a, g: v[0], w: v[1], d: smoothWr(v[0], v[1], 40) - 0.5 } : null;
+    })
+    .filter(Boolean);
+  if (synHits.length) {
+    const d = clamp(synHits.reduce((a, x) => a + x.d, 0) * 100, -6, 6);
+    score += d;
+    if (Math.abs(d) >= 1) {
+      const top = synHits.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 2);
+      reasons.push(`우리 조합 궁합 ${d > 0 ? '좋음' : '나쁨'}: ${top.map((x) => `${nm(x.a)}와 ${pct(x.w / x.g)}(${x.g}판)`).join(', ')}`);
     }
   }
 

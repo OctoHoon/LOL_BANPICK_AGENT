@@ -254,6 +254,21 @@ export function addMatch(raw, match) {
     const ad = byTeamPos[`${team}:adc`], sp = byTeamPos[`${team}:support`];
     if (ad && sp) bump(b.duos, `${ad.id}|${sp.id}`, ad.win);
   }
+  // 조합 단위: 상대 팀 다섯 명 각각과의 승률(vs), 같은 팀 두 명 조합의 승률(with)
+  b.vs ||= {}; b.with ||= {};
+  const teams = { 100: [], 200: [] };
+  for (const p of info.participants) teams[p.teamId]?.push({ id: champId(p.championName), win: p.win });
+  for (const [t, mine] of Object.entries(teams)) {
+    const theirs = teams[t === '100' ? 200 : 100];
+    for (const a of mine) {
+      const row = b.vs[a.id] || (b.vs[a.id] = {});
+      for (const e of theirs) bump(row, e.id, a.win);
+    }
+    for (let i = 0; i < mine.length; i += 1) for (let j = i + 1; j < mine.length; j += 1) {
+      const [x, y] = [mine[i].id, mine[j].id].sort();
+      bump(b.with, `${x}|${y}`, mine[i].win);
+    }
+  }
   return true;
 }
 
@@ -262,7 +277,7 @@ export function buildMeta(raw, keepPatches) {
     const [a1, a2] = a.split('.').map(Number), [b1, b2] = b.split('.').map(Number);
     return b1 - a1 || b2 - a2;
   }).slice(0, keepPatches);
-  const champs = {}, matchups = {}, duos = {};
+  const champs = {}, matchups = {}, duos = {}, vs = {}, withs = {};
   let games = 0;
   const keyToId = {};
   for (const pt of patches) {
@@ -288,6 +303,14 @@ export function buildMeta(raw, keepPatches) {
         v[0] += g; v[1] += w;
       }
     }
+    for (const [a, row] of Object.entries(b.vs || {})) for (const [e, [g, w]] of Object.entries(row)) {
+      const v = (vs[a] || (vs[a] = {}))[e] || (vs[a][e] = [0, 0]);
+      v[0] += g; v[1] += w;
+    }
+    for (const [k, [g, w]] of Object.entries(b.with || {})) {
+      const v = withs[k] || (withs[k] = [0, 0]);
+      v[0] += g; v[1] += w;
+    }
     for (const [k, [g, w]] of Object.entries(b.duos)) {
       const v = duos[k] || (duos[k] = [0, 0]);
       v[0] += g; v[1] += w;
@@ -299,7 +322,12 @@ export function buildMeta(raw, keepPatches) {
     if (!Object.keys(vs).length) delete mp[a];
   }
   for (const [k, [g]] of Object.entries(duos)) if (g < 3) delete duos[k];
-  return { updatedAt: new Date().toISOString(), source: 'KR 솔로 랭크 상위권(Riot API)', patches, games, champs, matchups, duos };
+  for (const [a, row] of Object.entries(vs)) {
+    for (const [e, [g]] of Object.entries(row)) if (g < 5) delete row[e];
+    if (!Object.keys(row).length) delete vs[a];
+  }
+  for (const [k, [g]] of Object.entries(withs)) if (g < 5) delete withs[k];
+  return { updatedAt: new Date().toISOString(), source: 'KR 솔로 랭크 상위권(Riot API)', patches, games, champs, matchups, duos, vs, with: withs };
 }
 
 export async function collectMeta(api, cfg) {

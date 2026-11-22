@@ -40,6 +40,11 @@ test('라인 상성·듀오 집계', () => {
   assert.deepEqual(meta.champs.Ornn.pos.top, [4, 2]);
   assert.deepEqual(meta.matchups.top.Ornn.Gnar, [4, 2]);
   assert.deepEqual(meta.duos['Jinx|Nautilus'], [4, 2]);
+  const raw2 = { patches: {} };
+  for (let n = 0; n < 6; n += 1) { const m = fakeMatch(n, []); m.info.queueId = 420; addMatch(raw2, m); }
+  const meta2 = buildMeta(raw2, 2);
+  assert.deepEqual(meta2.vs.Ahri.Vi, [6, 3]);
+  assert.deepEqual(meta2.with['Ahri|Jinx'], [6, 3]);
 });
 
 test('수집기 전체 실행 (가짜 Riot 서버)', async () => {

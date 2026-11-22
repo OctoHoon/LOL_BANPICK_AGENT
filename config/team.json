@@ -13,9 +13,9 @@
   "halfLifeDays": 120,
   "meta": {
     "tiers": ["challenger", "grandmaster", "master"],
-    "playersPerRun": 60,
-    "matchesPerPlayer": 10,
-    "maxNewMatchesPerRun": 300,
+    "playersPerRun": 300,
+    "matchesPerPlayer": 20,
+    "maxNewMatchesPerRun": 2000,
     "keepPatches": 2
   }
 }

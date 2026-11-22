@@ -93,6 +93,8 @@ const META = {
     },
   },
   duos: { 'Jinx|Nautilus': [50, 30] },
+  vs: { Ahri: { MonkeyKing: [100, 40] }, Orianna: { MonkeyKing: [100, 60] } },
+  with: { 'Ahri|Ornn': [80, 50] },
 };
 
 test('보정 승률은 표본이 적을수록 50%에 가깝다', () => {
@@ -185,4 +187,12 @@ test('미드가 이미 찼으면 같은 팀원의 다른 라인 챔프폭으로 
   const gnar = recs.find((r) => r.champ === 'Gnar' && r.memberId === 'm3');
   assert.equal(gnar.role, 'top');
   assert.ok(gnar.reasons.some((x) => x.startsWith('부 라인')));
+});
+
+test('상대 조합 전체와 우리 조합 궁합', () => {
+  const st = statReasons(META, champMap, 'mid', 'Ahri', { Yasuo: 'top' }, 3, { top: 'Ornn' }, new Set(), ['Yasuo', 'MonkeyKing']);
+  assert.ok(st.reasons.some((r) => r.startsWith('상대 조합 불리: 오공 상대 40%')));
+  assert.ok(st.reasons.some((r) => r.startsWith('우리 조합 궁합 좋음: 오른와 62.5%')));
+  const st2 = statReasons(META, champMap, 'mid', 'Orianna', {}, 3, {}, new Set(), ['MonkeyKing']);
+  assert.ok(st2.reasons.some((r) => r.startsWith('상대 조합 유리')));
 });
