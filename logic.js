@@ -1,4 +1,5 @@
 // 밴픽 순서와 추천 계산. 화면 코드와 분리해 node 로도 시험할 수 있게 했다.
+import { TRAIT_SETS } from './data/traits.js';
 
 export const ROLES = [
   { id: 'top', label: '탑' },
@@ -196,6 +197,10 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
       if (n <= 1 && (owners.get(p.champ) || 0) >= 2) { score += 5; reasons.push('여러 팀원이 다뤄 라인을 숨기기 좋음'); }
       if (p.tier === 1 && mainsLeft === 1) { score += 4; reasons.push('남은 주력이 이것뿐이라 밴 전에 확보 권장'); }
 
+      const cr = compReasons(p.champ, enemyPicks, ourPicks.map((x) => x.champ), champMap);
+      score += cr.score;
+      reasons.push(...cr.reasons);
+
       if (meta) {
         const st = statReasons(meta, champMap, role, p.champ, enemyPos, enemyLeft, ourByRole, used, enemyPicks);
         score += st.score;
@@ -207,6 +212,45 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
   }
   out.sort((a, b) => b.score - a.score);
   return out.slice(0, limit);
+}
+
+// ---------- 조합 규칙(data/traits.js) ----------
+// 통계와 별개로, 상대·우리 조합 성향을 보고 대응 챔피언에 가산점을 준다.
+export function compSummary(champIds, champMap) {
+  const has = (t) => champIds.filter((id) => TRAIT_SETS[t].has(id));
+  const prof = teamProfile(champIds, champMap);
+  return { dive: has('dive'), poke: has('poke'), engage: has('engage'), front: prof.front, ad: prof.ad, ap: prof.ap, count: champIds.length };
+}
+
+export function compReasons(champ, enemyPicks, ourPicks, champMap) {
+  const reasons = [];
+  let score = 0;
+  const nm = (id) => champMap.get(id)?.name || id;
+  const is = (t) => TRAIT_SETS[t].has(champ);
+  const e = compSummary(enemyPicks, champMap);
+  if (e.dive.length >= 2 && is('antidive')) {
+    const d = Math.min(10, 4 * (e.dive.length - 1));
+    score += d;
+    reasons.push(`상대 돌진 챔피언 ${e.dive.length}명(${e.dive.map(nm).join(', ')})이라 돌진 대응에 좋음`);
+  }
+  if (e.front >= 2 && is('tankshred')) {
+    score += Math.min(8, 4 * (e.front - 1));
+    reasons.push(`상대 앞라인 ${e.front}명이라 탱커 녹이기에 좋음`);
+  }
+  if (e.poke.length >= 2 && is('engage')) {
+    score += 6;
+    reasons.push(`상대 포킹 조합(${e.poke.map(nm).join(', ')})을 이니시로 끊기 좋음`);
+  }
+  if (e.count >= 3 && e.front === 0 && is('dive')) {
+    score += 5;
+    reasons.push('상대 앞라인이 없어 후방 진입이 쉬움');
+  }
+  const o = compSummary(ourPicks, champMap);
+  if (o.count >= 2 && o.engage.length === 0 && is('engage')) {
+    score += 5;
+    reasons.push('우리 조합에 이니시 부족');
+  }
+  return { score, reasons };
 }
 
 // 메타 통계로 매기는 가감점: 포지션 승률, 상대 라이너 상성, 바텀 듀오 궁합, 블라인드 픽 위험

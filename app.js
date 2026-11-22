@@ -3,7 +3,7 @@ import { teamFromCollected } from './team-data.js';
 import { SAMPLE_TEAM } from './data/sample.js';
 import {
   assignEnemyPositions, ourAssignments, roleShare, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
-  recommendPicks, recommendBans, guessMember, matchChampion,
+  recommendPicks, recommendBans, guessMember, matchChampion, compSummary,
 } from './logic.js';
 
 const STORE = 'banpick.state.v1';
@@ -142,6 +142,7 @@ function renderSide(side) {
   const takenRoles = new Set(asg.map((a) => a.role));
   const prof = teamProfile(picks.filter((p) => p.champ).map((p) => p.champ), S.champMap);
   const total = prof.ad + prof.ap || 1;
+  const cs = compSummary(picks.filter((p) => p.champ).map((p) => p.champ), S.champMap);
   const enemyPos = !ours && S.meta ? assignEnemyPositions(S.meta, picks.filter((p) => p.champ).map((p) => p.champ)) : {};
 
   return `
@@ -177,6 +178,7 @@ function renderSide(side) {
     <div class="profile" title="Data Dragon 태그와 수동 분류 기반 추정">
       <div class="dmgbar"><span class="ad" style="width:${(prof.ad / total) * 100}%"></span><span class="ap" style="width:${(prof.ap / total) * 100}%"></span></div>
       <div class="profile-txt">AD ${prof.ad} · AP ${prof.ap} · 앞라인 ${prof.front}</div>
+      ${cs.count ? `<div class="profile-txt">돌진 ${cs.dive.length} · 이니시 ${cs.engage.length} · 포킹 ${cs.poke.length}</div>` : ''}
     </div>
   </section>`;
 }

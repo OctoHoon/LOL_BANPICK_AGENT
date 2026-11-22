@@ -10,12 +10,13 @@ Ahri|아리|Mage,Assassin|AP|0
 Akali|아칼리|Assassin|AP|0
 Akshan|아크샨|Marksman,Assassin|AD|0
 Alistar|알리스타|Tank,Support|AP|1
-Amumu|아무무|Tank,Mage|AP|1
 Ambessa|암베사|Fighter,Assassin|AD|0
+Amumu|아무무|Tank,Mage|AP|1
 Anivia|애니비아|Mage,Support|AP|0
 Annie|애니|Mage|AP|0
 Aphelios|아펠리오스|Marksman|AD|0
 Ashe|애쉬|Marksman,Support|AD|0
+AurelionSol|아우렐리온 솔|Mage|AP|0
 Aurora|오로라|Mage,Assassin|AP|0
 Azir|아지르|Mage,Marksman|AP|0
 Bard|바드|Support,Mage|AP|0
@@ -28,10 +29,11 @@ Caitlyn|케이틀린|Marksman|AD|0
 Camille|카밀|Fighter,Tank|AD|0
 Cassiopeia|카시오페아|Mage|AP|0
 Chogath|초가스|Tank,Mage|AP|1
+Corki|코르키|Marksman|AD|0
 Darius|다리우스|Fighter,Tank|AD|1
 Diana|다이애나|Fighter,Mage|AP|0
-DrMundo|문도 박사|Fighter,Tank|AD|1
 Draven|드레이븐|Marksman|AD|0
+DrMundo|문도 박사|Fighter,Tank|AD|1
 Ekko|에코|Assassin,Fighter|AP|0
 Elise|엘리스|Mage,Fighter|AP|0
 Evelynn|이블린|Assassin,Mage|AP|0
@@ -89,6 +91,8 @@ Milio|밀리오|Support,Mage|AP|0
 MissFortune|미스 포츈|Marksman|AD|0
 MonkeyKing|오공|Fighter,Tank|AD|1
 Mordekaiser|모데카이저|Fighter,Mage|AP|1
+Morgana|모르가나|Mage,Support|AP|0
+Naafiri|나피리|Assassin|AD|0
 Nami|나미|Support,Mage|AP|0
 Nasus|나서스|Fighter,Tank|AD|1
 Nautilus|노틸러스|Tank,Support|AP|1
@@ -100,6 +104,7 @@ Nunu|누누와 윌럼프|Tank,Mage|AP|1
 Olaf|올라프|Fighter,Tank|AD|1
 Orianna|오리아나|Mage,Support|AP|0
 Ornn|오른|Tank,Fighter|AD|1
+Pantheon|판테온|Fighter,Assassin|AD|0
 Poppy|뽀삐|Tank,Fighter|AD|1
 Pyke|파이크|Support,Assassin|AD|0
 Qiyana|키아나|Assassin,Fighter|AD|0
@@ -121,8 +126,9 @@ Seraphine|세라핀|Mage,Support|AP|0
 Sett|세트|Fighter,Tank|AD|1
 Shaco|샤코|Assassin|AD|0
 Shen|쉔|Tank|AP|1
-Sion|사이온|Tank,Fighter|AD|1
+Shyvana|쉬바나|Fighter,Tank|AP|1
 Singed|신지드|Tank,Mage|AP|1
+Sion|사이온|Tank,Fighter|AD|1
 Sivir|시비르|Marksman|AD|0
 Skarner|스카너|Tank,Fighter|AD|1
 Smolder|스몰더|Marksman,Mage|AD|0
@@ -142,6 +148,7 @@ Trundle|트런들|Fighter,Tank|AD|1
 Tryndamere|트린다미어|Fighter,Assassin|AD|0
 TwistedFate|트위스티드 페이트|Mage|AP|0
 Twitch|트위치|Marksman,Assassin|AD|0
+Udyr|우디르|Fighter,Tank|AP|1
 Urgot|우르곳|Fighter,Tank|AD|1
 Varus|바루스|Marksman,Mage|AD|0
 Vayne|베인|Marksman,Assassin|AD|0
@@ -160,6 +167,7 @@ XinZhao|신 짜오|Fighter,Assassin|AD|0
 Yasuo|야스오|Fighter,Assassin|AD|0
 Yone|요네|Assassin,Fighter|AD|0
 Yorick|요릭|Fighter,Tank|AD|0
+Yunara|유나라|Marksman|AD|0
 Yuumi|유미|Support,Mage|AP|0
 Zac|자크|Tank,Fighter|AP|1
 Zed|제드|Assassin|AD|0

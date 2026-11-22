@@ -196,3 +196,25 @@ test('상대 조합 전체와 우리 조합 궁합', () => {
   const st2 = statReasons(META, champMap, 'mid', 'Orianna', {}, 3, {}, new Set(), ['MonkeyKing']);
   assert.ok(st2.reasons.some((r) => r.startsWith('상대 조합 유리')));
 });
+
+// ---------- 조합 규칙 ----------
+import { compReasons } from '../logic.js';
+
+test('상대 돌진 챔피언이 많으면 돌진 대응 챔피언 점수가 오른다', () => {
+  const r = compReasons('Taliyah', ['Zed', 'Khazix', 'Vi'], [], champMap);
+  assert.equal(r.score, 8);
+  assert.ok(r.reasons[0].startsWith('상대 돌진 챔피언 3명'));
+  assert.equal(compReasons('Taliyah', ['Zed'], [], champMap).score, 0);
+  assert.ok(!compReasons('Ahri', ['Zed', 'Khazix', 'Vi'], [], champMap).reasons.some((x) => x.includes('돌진 대응')));
+});
+
+test('우리 조합에 이니시가 없으면 이니시 챔피언 가산', () => {
+  const r = compReasons('Leona', [], ['Jinx', 'Ahri'], champMap);
+  assert.ok(r.reasons.includes('우리 조합에 이니시 부족'));
+  assert.equal(compReasons('Leona', [], ['Jinx', 'Nautilus'], champMap).score, 0);
+});
+
+test('조합 특성 표의 id가 모두 챔피언 표에 있다', async () => {
+  const { TRAITS } = await import('../data/traits.js');
+  for (const ids of Object.values(TRAITS)) for (const id of ids) assert.ok(champMap.has(id), id);
+});
