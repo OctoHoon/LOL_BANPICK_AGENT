@@ -38,7 +38,7 @@ python3 -m http.server 5173      # 또는 npm run dev
 
 | 파일 | 내용 | 출처 |
 |---|---|---|
-| `data/team.json` | 팀원별 최근 랭크(자유·솔로) 60판의 챔피언별 판수·승수, 주 포지션, 숙련도 상위 15개, 팀원끼리 함께한 판수 | account-v1, champion-mastery-v4, match-v5 |
+| `data/team.json` | 팀원별 최근 랭크(자유·솔로) 200판의 챔피언별 판수·승수, 주 포지션, 숙련도 상위 15개, 팀원끼리 함께한 판수 | account-v1, champion-mastery-v4, match-v5 |
 | `data/meta.json` | KR 챌린저~마스터 솔로 랭크의 챔피언 포지션별 판수·승수, 밴 수, 같은 라인 맞대결 상성, 원딜·서폿 듀오 궁합 | league-v4, match-v5 |
 | `data/raw/` | 다음 실행 때 이어서 쌓기 위한 누적 원자료와 이미 본 경기 목록 | |
 

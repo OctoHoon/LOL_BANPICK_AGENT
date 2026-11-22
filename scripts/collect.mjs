@@ -105,9 +105,15 @@ export async function collectMembers(api, cfg) {
     const mastery = (await api.get('platform', `/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=15`)) || [];
 
     const ids = new Set();
+    const want = cfg.memberMatchCount || 60;
     for (const q of cfg.memberQueues || [440, 420]) {
-      const list = (await api.get('regional', `/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=${q}&start=0&count=${cfg.memberMatchCount || 60}`)) || [];
-      list.forEach((id) => ids.add(id));
+      // 한 번에 최대 100개라 나눠서 받는다
+      for (let start = 0; start < want; start += 100) {
+        const count = Math.min(100, want - start);
+        const list = (await api.get('regional', `/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=${q}&start=${start}&count=${count}`)) || [];
+        list.forEach((id) => ids.add(id));
+        if (list.length < count) break;
+      }
     }
     // match id 는 서버 접두사 + 증가 번호라서 번호 기준으로 최근 순 정렬
     const recent = [...ids].sort((a, b) => Number(b.split('_')[1]) - Number(a.split('_')[1])).slice(0, cfg.memberMatchCount || 60);
