@@ -62,6 +62,45 @@ export function teamProfile(champIds, champMap) {
   return { ad, ap, front, count: champIds.length };
 }
 
+// ---------- 통계(meta.json) 도우미 ----------
+// 표본이 적을 때 50%로 끌어당기는 보정 승률. k판만큼 50% 경기가 더 있다고 본다.
+export function smoothWr(games, wins, k = 30) {
+  return (wins + 0.5 * k) / (games + k);
+}
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const pct = (v) => `${Math.round(v * 1000) / 10}%`;
+
+// 챔피언이 가장 많이 가는 포지션과 그 비중
+export function inferPosition(meta, champ) {
+  const pos = meta?.champs?.[champ]?.pos;
+  if (!pos) return null;
+  const total = Object.values(pos).reduce((a, [g]) => a + g, 0);
+  const [best, [g]] = Object.entries(pos).sort((a, b) => b[1][0] - a[1][0])[0] || [null, [0]];
+  return best ? { pos: best, share: g / total, total } : null;
+}
+
+// 상대 픽마다 포지션을 정한다. 같은 포지션이 겹치면 비중이 큰 쪽을 그 자리에 둔다.
+export function assignEnemyPositions(meta, champs) {
+  const out = {};
+  const taken = new Set();
+  const cand = champs.map((c) => {
+    const pos = meta?.champs?.[c]?.pos || {};
+    const total = Object.values(pos).reduce((a, [g]) => a + g, 0) || 1;
+    return { c, opts: Object.entries(pos).map(([p, [g]]) => ({ p, share: g / total })).sort((a, b) => b.share - a.share) };
+  });
+  const flat = cand.flatMap(({ c, opts }) => opts.map((o) => ({ c, ...o }))).sort((a, b) => b.share - a.share);
+  for (const { c, p } of flat) {
+    if (out[c] || taken.has(p)) continue;
+    out[c] = p; taken.add(p);
+  }
+  return out;
+}
+
+function laneStat(meta, role, a, b) {
+  const v = meta?.matchups?.[role]?.[a]?.[b];
+  return v ? { games: v[0], wins: v[1] } : null;
+}
+
 function wrBonus(entry) {
   if (!entry.games || entry.games < 5) return 0;
   const wr = (entry.wins / entry.games) * 100;
@@ -70,7 +109,7 @@ function wrBonus(entry) {
 
 // 우리 팀 픽 추천.
 // state: { team, actions, seq, assign }  assign: { stepIndex: memberId }
-export function recommendPicks(state, champMap, limit = 8) {
+export function recommendPicks(state, champMap, limit = 8, meta = null) {
   const { team, actions, seq, assign } = state;
   const ours = team.side;
   const used = usedChampions(actions);
@@ -79,6 +118,15 @@ export function recommendPicks(state, champMap, limit = 8) {
   const openMembers = team.members.filter((m) => !filledMembers.has(m.id));
   const prof = teamProfile(ourPicks.map((s) => s.champ), champMap);
   const threats = new Set(team.threats || []);
+  const enemySide = ours === 'blue' ? 'red' : 'blue';
+  const enemyPicks = sideChampions(actions, seq, enemySide, 'pick').filter((s) => s.champ).map((s) => s.champ);
+  const enemyLeft = sideChampions(actions, seq, enemySide, 'pick').filter((s) => !s.champ).length;
+  const enemyPos = assignEnemyPositions(meta, enemyPicks);
+  const ourByRole = {};
+  for (const s of ourPicks) {
+    const mem = team.members.find((x) => x.id === assign[s.i]);
+    if (mem) ourByRole[mem.role] = s.champ;
+  }
 
   // 같은 챔피언을 몇 명이 다룰 수 있는지(플렉스 판단용)
   const owners = new Map();
@@ -112,6 +160,12 @@ export function recommendPicks(state, champMap, limit = 8) {
       if (n <= 1 && (owners.get(p.champ) || 0) >= 2) { score += 5; reasons.push('여러 팀원이 다뤄 라인을 숨기기 좋음'); }
       if (p.tier === 1 && mainsLeft === 1) { score += 4; reasons.push('남은 주력이 이것뿐이라 밴 전에 확보 권장'); }
 
+      if (meta) {
+        const st = statReasons(meta, champMap, m.role, p.champ, enemyPos, enemyLeft, ourByRole, used);
+        score += st.score;
+        reasons.push(...st.reasons);
+      }
+
       out.push({ champ: p.champ, memberId: m.id, role: m.role, score: Math.round(score), reasons });
     }
   }
@@ -119,10 +173,62 @@ export function recommendPicks(state, champMap, limit = 8) {
   return out.slice(0, limit);
 }
 
+// 메타 통계로 매기는 가감점: 포지션 승률, 상대 라이너 상성, 바텀 듀오 궁합, 블라인드 픽 위험
+export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ourByRole, used = new Set()) {
+  let score = 0;
+  const reasons = [];
+  const nm = (id) => champMap.get(id)?.name ?? id;
+  const roleName = ROLES.find((r) => r.id === role)?.label ?? role;
+
+  const pr = meta.champs?.[champ]?.pos?.[role];
+  const total = Object.values(meta.champs?.[champ]?.pos || {}).reduce((a, [g]) => a + g, 0);
+  if (pr && pr[0] >= 20) {
+    const wr = smoothWr(pr[0], pr[1], 50);
+    const d = clamp((wr - 0.5) * 150, -8, 8);
+    score += d;
+    if (Math.abs(d) >= 1.5) reasons.push(`상위권 ${roleName} 승률 ${pct(pr[1] / pr[0])} (${pr[0]}판)`);
+  }
+  if (total >= 50 && (pr?.[0] || 0) / total < 0.05) { score -= 5; reasons.push(`상위권에서 ${roleName}로는 드문 픽`); }
+
+  const enemyHere = Object.entries(enemyPos).find(([, p]) => p === role)?.[0];
+  if (enemyHere) {
+    const v = laneStat(meta, role, champ, enemyHere);
+    if (v && v.games >= 5) {
+      const wr = smoothWr(v.games, v.wins, 30);
+      const d = clamp((wr - 0.5) * 150, -12, 12);
+      score += d;
+      reasons.push(`상대 ${roleName} ${nm(enemyHere)} 상대 승률 ${pct(v.wins / v.games)} (${v.games}판)`);
+    }
+  } else if (enemyLeft > 0) {
+    // 상대 라이너가 아직 안 나왔을 때: 표본이 충분하고 크게 불리한 상대가 몇이나 되는지
+    const vs = meta.matchups?.[role]?.[champ] || {};
+    const bad = Object.entries(vs)
+      .filter(([e, [g, w]]) => g >= 10 && smoothWr(g, w, 30) < 0.46 && champMap.has(e) && !used.has(e))
+      .sort((a, b) => smoothWr(a[1][0], a[1][1]) - smoothWr(b[1][0], b[1][1]))
+      .slice(0, 3);
+    if (bad.length >= 2) {
+      score -= bad.length;
+      reasons.push(`카운터 주의: ${bad.map(([e]) => nm(e)).join(', ')}`);
+    }
+  }
+
+  const mate = role === 'adc' ? ourByRole.support : role === 'support' ? ourByRole.adc : null;
+  if (mate) {
+    const key = role === 'adc' ? `${champ}|${mate}` : `${mate}|${champ}`;
+    const v = meta.duos?.[key];
+    if (v && v[0] >= 5) {
+      const d = clamp((smoothWr(v[0], v[1], 30) - 0.5) * 120, -6, 6);
+      score += d;
+      reasons.push(`${nm(mate)}와 듀오 승률 ${pct(v[1] / v[0])} (${v[0]}판)`);
+    }
+  }
+  return { score, reasons };
+}
+
 // 밴 추천: 팀원이 상대하기 싫다고 적은 챔피언과 경계 목록을 합산한다.
 // 우리 팀 주력 챔피언은 밴하지 않는다.
-export function recommendBans(state, champMap, limit = 8) {
-  const { team, actions } = state;
+export function recommendBans(state, champMap, limit = 8, meta = null) {
+  const { team, actions, seq = [], assign = {} } = state;
   const used = usedChampions(actions);
   const ourMains = new Set();
   for (const m of team.members) for (const p of m.pool) if (p.tier <= 2) ourMains.add(p.champ);
@@ -139,6 +245,32 @@ export function recommendBans(state, champMap, limit = 8) {
     for (const id of m.hates || []) add(id, 30, `${m.name || '팀원'}이(가) 상대하기 싫은 챔피언`);
   }
   (team.threats || []).forEach((id, i) => add(id, 25 - Math.min(i, 10), '경계 목록'));
+
+  if (meta?.games) {
+    // 상위권 밴픽률과 승률
+    for (const [id, c] of Object.entries(meta.champs || {})) {
+      const g = Object.values(c.pos).reduce((a, [x]) => a + x, 0);
+      const w = Object.values(c.pos).reduce((a, [, x]) => a + x, 0);
+      const presence = (g + (c.bans || 0)) / meta.games;
+      const wr = smoothWr(g, w, 50);
+      const s = presence * 40 + clamp((wr - 0.5) * 150, -6, 6);
+      if (s >= 8) add(id, Math.round(s), `상위권 밴픽률 ${pct(presence)}, 승률 ${pct(g ? w / g : 0.5)}`);
+    }
+    // 아직 픽하지 않은 팀원의 주력 챔피언을 라인전에서 이기는 챔피언
+    const ourPicks = seq.map((s, i) => ({ ...s, i })).filter((s) => s.side === team.side && s.type === 'pick' && actions[s.i]);
+    const filled = new Set(ourPicks.map((s) => assign[s.i]));
+    for (const m of team.members) {
+      if (filled.has(m.id)) continue;
+      for (const p of m.pool.filter((x) => x.tier === 1 && !used.has(x.champ))) {
+        const vs = meta.matchups?.[m.role]?.[p.champ] || {};
+        for (const [e, [g, w]] of Object.entries(vs)) {
+          if (g < 8) continue;
+          const wr = smoothWr(g, w, 30);
+          if (wr < 0.47) add(e, Math.round((0.5 - wr) * 200), `${m.name || '팀원'}의 ${champMap.get(p.champ)?.name ?? p.champ} 상대로 강함 (우리 승률 ${pct(w / g)}, ${g}판)`);
+        }
+      }
+    }
+  }
 
   const skipped = [...new Set([
     ...(team.threats || []),

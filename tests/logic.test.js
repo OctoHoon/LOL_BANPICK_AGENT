@@ -72,3 +72,63 @@ test('팀원 배정 추정, 초성 검색, 조합 성향', () => {
   assert.equal(p.ap, 1);
   assert.equal(p.ad, 1.5);
 });
+
+// ---------- 메타 통계 반영 ----------
+import { recommendBans as rb, recommendPicks as rp, assignEnemyPositions, smoothWr, statReasons } from '../logic.js';
+
+const META = {
+  games: 1000,
+  champs: {
+    Ahri: { pos: { mid: [300, 165] }, bans: 50 },
+    Zed: { pos: { mid: [200, 100] }, bans: 300 },
+    Orianna: { pos: { mid: [150, 70] }, bans: 5 },
+    Gnar: { pos: { top: [100, 50] }, bans: 0 },
+    Yasuo: { pos: { mid: [120, 60], top: [80, 40] }, bans: 100 },
+  },
+  matchups: {
+    mid: {
+      Ahri: { Zed: [60, 24], Yasuo: [40, 26] },
+      Orianna: { Yasuo: [40, 14] },
+    },
+  },
+  duos: { 'Jinx|Nautilus': [50, 30] },
+};
+
+test('보정 승률은 표본이 적을수록 50%에 가깝다', () => {
+  assert.ok(Math.abs(smoothWr(2, 2) - 0.5) < 0.05);
+  assert.ok(smoothWr(1000, 600) > 0.59);
+});
+
+test('상대 포지션 추정: 겹치면 비중이 큰 쪽이 자리를 차지한다', () => {
+  const pos = assignEnemyPositions(META, ['Yasuo', 'Ahri']);
+  assert.equal(pos.Ahri, 'mid');
+  assert.equal(pos.Yasuo, 'top');
+});
+
+test('상대 미드가 나오면 라인 상성이 픽 점수에 반영된다', () => {
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  actions[11] = 'Yasuo'; // 레드 1픽
+  const recs = rp({ team, actions, seq, assign: {} }, champMap, 50, META);
+  const ahri = recs.find((r) => r.champ === 'Ahri');
+  const ori = recs.find((r) => r.champ === 'Orianna');
+  assert.ok(ahri.reasons.some((x) => x.includes('야스오 상대 승률 65%')));
+  assert.ok(ori.reasons.some((x) => x.includes('야스오 상대 승률 35%')));
+  assert.ok(ahri.score > ori.score + 10);
+});
+
+test('밴 추천: 메타 밴픽률과 우리 주력 카운터', () => {
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  const { list } = rb({ team, actions, seq, assign: {} }, champMap, 20, META);
+  const zed = list.find((x) => x.champ === 'Zed');
+  assert.ok(zed);
+  assert.ok(zed.reasons.some((r) => r.includes('밴픽률 50%')));
+  assert.ok(zed.reasons.some((r) => r.includes('아리 상대로 강함')));
+});
+
+test('듀오 궁합', () => {
+  const st = statReasons(META, champMap, 'adc', 'Jinx', {}, 0, { support: 'Nautilus' });
+  assert.ok(st.reasons.some((r) => r.includes('노틸러스와 듀오 승률 60%')));
+  assert.ok(st.score > 0);
+});

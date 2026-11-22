@@ -1,7 +1,8 @@
 import { loadChampions } from './champions-loader.js';
+import { teamFromCollected } from './team-data.js';
 import { SAMPLE_TEAM } from './data/sample.js';
 import {
-  ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
+  assignEnemyPositions, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
   recommendPicks, recommendBans, guessMember, matchChampion,
 } from './logic.js';
 
@@ -12,7 +13,7 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const roleLabel = (id) => ROLES.find((r) => r.id === id)?.label ?? '';
 
 const S = {
-  champs: [], champMap: new Map(), source: '',
+  champs: [], champMap: new Map(), source: '', meta: null, collected: null, fresh: false,
   team: null, actions: [], assign: {},
   tab: 'draft', search: '', tag: '', poolOnly: false, toast: '',
 };
@@ -53,11 +54,14 @@ function restore() {
       return;
     }
   } catch { /* 무시 */ }
+  S.fresh = true;
   S.team = clone(SAMPLE_TEAM);
   S.actions = Array(seq().length).fill(null);
 }
 function normalizeTeam(t) {
   const team = { side: t.side === 'red' ? 'red' : 'blue', format: t.format === 'tournament' ? 'tournament' : 'ranked', threats: t.threats || [], members: [] };
+  if (t.example) team.example = true;
+  if (t.collectedAt) team.collectedAt = t.collectedAt;
   for (let i = 0; i < 5; i += 1) {
     const m = t.members?.[i] || {};
     team.members.push({
@@ -132,6 +136,7 @@ function renderSide(side) {
   const filled = new Set(Object.entries(S.assign).filter(([i]) => S.actions[i]).map(([, m]) => m));
   const prof = teamProfile(picks.filter((p) => p.champ).map((p) => p.champ), S.champMap);
   const total = prof.ad + prof.ap || 1;
+  const enemyPos = !ours && S.meta ? assignEnemyPositions(S.meta, picks.filter((p) => p.champ).map((p) => p.champ)) : {};
 
   return `
   <section class="side ${side} ${ours ? 'ours' : ''}">
@@ -148,7 +153,7 @@ function renderSide(side) {
       <li class="slot pick ${p.i === cur ? 'now' : ''}">
         <button class="pickbtn" data-slot="${p.i}" title="${p.champ ? '눌러서 비우기' : stepLabel(p.i)}">
           ${p.champ ? portrait(p.champ) : '<span class="pt empty"></span>'}
-          <span class="pick-name">${p.champ ? esc(champName(p.champ)) : `<em>${stepLabel(p.i)}</em>`}</span>
+          <span class="pick-name">${p.champ ? esc(champName(p.champ)) : `<em>${stepLabel(p.i)}</em>`}${enemyPos[p.champ] ? `<small class="guess" title="상위권 통계로 추정한 포지션">${esc(roleLabel(enemyPos[p.champ]))}?</small>` : ''}</span>
         </button>
         ${ours && p.champ ? `
         <select class="assign" data-assign="${p.i}" aria-label="담당 팀원">
@@ -190,13 +195,13 @@ function renderReco() {
   const st = { team: S.team, actions: S.actions, seq: seq(), assign: S.assign };
   let body = '';
   if (s.type === 'ban') {
-    const { list, skipped } = recommendBans(st, S.champMap);
+    const { list, skipped } = recommendBans(st, S.champMap, 8, S.meta);
     body = list.length
       ? `<ol class="recos">${list.map((r) => recoItem(r, 'ban')).join('')}</ol>`
       : '<p class="muted">밴 후보가 없습니다. 팀 챔프폭 화면에서 팀원별 상대하기 싫은 챔피언이나 경계 목록을 채워 주세요.</p>';
     if (skipped.length) body += `<p class="muted small">우리 팀이 쓰는 챔피언이라 밴 후보에서 뺀 것: ${skipped.map(champName).map(esc).join(', ')}</p>`;
   } else {
-    const list = recommendPicks(st, S.champMap);
+    const list = recommendPicks(st, S.champMap, 8, S.meta);
     body = list.length
       ? `<ol class="recos">${list.map((r) => recoItem(r, 'pick')).join('')}</ol>`
       : '<p class="muted">남은 팀원 챔프폭에서 고를 수 있는 챔피언이 없습니다. 아래 목록에서 직접 고르세요.</p>';
@@ -291,10 +296,21 @@ function renderMember(m, idx) {
   </article>`;
 }
 
+function teamNotice() {
+  if (S.team.collectedAt) {
+    return `<p class="notice ok">챔프폭은 ${esc(new Date(S.team.collectedAt).toLocaleString('ko-KR'))}에 수집한 최근 랭크 전적에서 채웠습니다. 주력·가능·연습은 판수로 임시 판정한 것이니 고쳐 쓰세요.</p>`;
+  }
+  if (S.team.example) {
+    return '<p class="notice">아직 Riot API로 전적을 수집하지 않아 멤버 Riot ID만 실제이고, 라인과 챔프폭은 임시 예시입니다. 수집기를 한 번 돌리면 실제 전적으로 바뀝니다.</p>';
+  }
+  return '';
+}
+
 function renderTeam() {
   const t = S.team;
   $('#main').innerHTML = `
   ${datalist()}
+  ${teamNotice()}
   <p class="lead">팀원마다 라인과 챔프폭을 적어 두면 밴픽 화면에서 누구에게 무엇을 쥐여 줄지 추천합니다. 전적은 승/판 형식(예: 14/24)으로 적고, 5판 이상일 때만 점수에 반영합니다.</p>
   <div class="members">${t.members.map(renderMember).join('')}</div>
   <article class="member threats">
@@ -303,6 +319,7 @@ function renderTeam() {
     <div class="chips">${t.threats.map((h, hi) => `<span class="chip">${esc(champName(h))}<button class="x" data-del-threat="${hi}" aria-label="삭제">×</button></span>`).join('')}</div>
     <input class="add" data-add="threat" list="champ-names" placeholder="+ 챔피언 추가">
     <div class="row">
+      ${S.collected ? '<button id="loadCollected" class="ghost">수집한 전적으로 다시 채우기</button>' : ''}
       <button id="loadSample" class="ghost">예시 팀으로 되돌리기</button>
       <button id="clearTeam" class="ghost danger">모두 비우기</button>
     </div>
@@ -340,7 +357,10 @@ async function importMastery(idx, btn) {
 function render() {
   renderHeader();
   if (S.tab === 'team') renderTeam(); else renderDraft();
-  $('#source').textContent = `챔피언 데이터: ${S.source}`;
+  const metaTxt = S.meta
+    ? `메타 통계: ${S.meta.source}, 패치 ${S.meta.patches.join('·')}, ${S.meta.games.toLocaleString('ko-KR')}판 (${new Date(S.meta.updatedAt).toLocaleDateString('ko-KR')} 수집)`
+    : '메타 통계: 아직 없음 (수집기 실행 전)';
+  $('#source').textContent = `챔피언 데이터: ${S.source} · ${metaTxt}`;
 }
 
 function bind() {
@@ -379,6 +399,11 @@ function bind() {
     if (m && t.dataset.delPool != null) { m.pool.splice(Number(t.dataset.delPool), 1); save(); renderTeam(); return; }
     if (m && t.dataset.delHate != null) { m.hates.splice(Number(t.dataset.delHate), 1); save(); renderTeam(); return; }
     if (t.dataset.delThreat != null) { S.team.threats.splice(Number(t.dataset.delThreat), 1); save(); renderTeam(); return; }
+    if (t.id === 'loadCollected' && S.collected) {
+      S.team = teamFromCollected(S.collected, S.champMap, S.team); save(); render();
+      toast('수집한 최근 랭크 전적으로 챔프폭을 채웠습니다. 주력·가능·연습은 판수로 임시 판정했습니다.');
+      return;
+    }
     if (t.id === 'loadSample') { S.team = clone(SAMPLE_TEAM); S.actions = Array(seq().length).fill(null); S.assign = {}; save(); render(); return; }
     if (t.id === 'clearTeam') {
       S.team = normalizeTeam({ side: S.team.side, format: S.team.format, threats: [] });
@@ -449,11 +474,22 @@ function addFromInput(t) {
     again?.focus();
 }
 
+async function loadJson(url) {
+  try {
+    const res = await fetch(url, { cache: 'no-cache' });
+    return res.ok ? await res.json() : null;
+  } catch { return null; }
+}
+
 async function main() {
   restore();
   bind();
   const { list, source } = await loadChampions();
   S.champs = list; S.champMap = new Map(list.map((c) => [c.id, c])); S.source = source;
+  const [meta, collected] = await Promise.all([loadJson('data/meta.json'), loadJson('data/team.json')]);
+  S.meta = meta?.games ? meta : null;
+  S.collected = collected?.members?.length ? collected : null;
+  if (S.fresh && S.collected) { S.team = teamFromCollected(S.collected, S.champMap, S.team); save(); }
   render();
   if (S.toast) toast(S.toast);
 }

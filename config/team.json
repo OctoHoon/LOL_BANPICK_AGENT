@@ -1,0 +1,19 @@
+{
+  "region": { "platform": "kr", "regional": "asia" },
+  "members": [
+    { "riotId": "ヨイショト#hooon" },
+    { "riotId": "야리야#KR1" },
+    { "riotId": "Nica#KR1" },
+    { "riotId": "신동우#KR1" },
+    { "riotId": "민트초코스무디#1557" }
+  ],
+  "memberQueues": [440, 420],
+  "memberMatchCount": 60,
+  "meta": {
+    "tiers": ["challenger", "grandmaster", "master"],
+    "playersPerRun": 60,
+    "matchesPerPlayer": 10,
+    "maxNewMatchesPerRun": 300,
+    "keepPatches": 2
+  }
+}

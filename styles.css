@@ -155,3 +155,6 @@ main { flex: 1; padding: 16px 20px; width: 100%; max-width: 1400px; margin: 0 au
   .grid { max-height: 50vh; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
   .cell .pt { width: 42px; height: 42px; }
 }
+.guess { margin-left: 6px; font-size: 11px; color: var(--muted); }
+.notice { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--gold); background: rgba(224, 180, 76, .08); }
+.notice.ok { border-color: var(--line); background: var(--panel); color: var(--muted); }
