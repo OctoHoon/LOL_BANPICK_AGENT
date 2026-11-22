@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-22T14:04:42.439Z",
+  "updatedAt": "2026-11-22T14:12:34.506Z",
   "members": [
     {
       "riotId": "ヨイショト#hooon",
@@ -16,122 +16,286 @@
         {
           "champ": "Evelynn",
           "games": 13,
-          "wins": 6
+          "wins": 6,
+          "pos": {
+            "jungle": [
+              12,
+              5
+            ],
+            "top": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Velkoz",
           "games": 6,
-          "wins": 4
+          "wins": 4,
+          "pos": {
+            "adc": [
+              4,
+              3
+            ],
+            "support": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Ezreal",
           "games": 5,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "adc": [
+              5,
+              3
+            ]
+          }
         },
         {
           "champ": "Lux",
           "games": 5,
-          "wins": 4
+          "wins": 4,
+          "pos": {
+            "support": [
+              4,
+              4
+            ],
+            "mid": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Leona",
           "games": 3,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "support": [
+              3,
+              2
+            ]
+          }
         },
         {
           "champ": "Lulu",
           "games": 3,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              2,
+              1
+            ],
+            "top": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Malphite",
           "games": 3,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "top": [
+              3,
+              3
+            ]
+          }
         },
         {
           "champ": "Lissandra",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "top": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Poppy",
           "games": 2,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "jungle": [
+              1,
+              0
+            ],
+            "support": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "JarvanIV",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "KogMaw",
           "games": 2,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "top": [
+              2,
+              2
+            ]
+          }
         },
         {
           "champ": "Xayah",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Bard",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "support": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Seraphine",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Zac",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Darius",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "top": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Viego",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Jhin",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Ziggs",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Senna",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Sivir",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "adc": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Zyra",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Neeko",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "mid": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Ahri",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "top": [
+              1,
+              1
+            ]
+          }
         }
       ],
       "mastery": [
@@ -225,67 +389,145 @@
         {
           "champ": "Zyra",
           "games": 20,
-          "wins": 12
+          "wins": 12,
+          "pos": {
+            "jungle": [
+              20,
+              12
+            ]
+          }
         },
         {
           "champ": "Hecarim",
           "games": 17,
-          "wins": 8
+          "wins": 8,
+          "pos": {
+            "jungle": [
+              17,
+              8
+            ]
+          }
         },
         {
           "champ": "Kalista",
           "games": 5,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "adc": [
+              5,
+              3
+            ]
+          }
         },
         {
           "champ": "Kindred",
           "games": 4,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "jungle": [
+              4,
+              3
+            ]
+          }
         },
         {
           "champ": "Locke",
           "games": 3,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              3,
+              1
+            ]
+          }
         },
         {
           "champ": "Graves",
           "games": 3,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              3,
+              1
+            ]
+          }
         },
         {
           "champ": "Khazix",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Vi",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "jungle": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Twitch",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Nidalee",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Qiyana",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "jungle": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Evelynn",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "jungle": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Ekko",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "jungle": [
+              1,
+              0
+            ]
+          }
         }
       ],
       "mastery": [
@@ -381,47 +623,109 @@
         {
           "champ": "Akali",
           "games": 34,
-          "wins": 22
+          "wins": 22,
+          "pos": {
+            "mid": [
+              32,
+              22
+            ],
+            "top": [
+              2,
+              0
+            ]
+          }
         },
         {
           "champ": "Quinn",
           "games": 6,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "mid": [
+              6,
+              3
+            ]
+          }
         },
         {
           "champ": "Qiyana",
           "games": 6,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "mid": [
+              5,
+              3
+            ],
+            "jungle": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Tristana",
           "games": 4,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              4,
+              1
+            ]
+          }
         },
         {
           "champ": "Taliyah",
           "games": 3,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "mid": [
+              3,
+              2
+            ]
+          }
         },
         {
           "champ": "Talon",
           "games": 3,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "mid": [
+              3,
+              1
+            ]
+          }
         },
         {
           "champ": "Zoe",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "mid": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Lillia",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "mid": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Smolder",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "mid": [
+              1,
+              0
+            ]
+          }
         }
       ],
       "mastery": [
@@ -515,112 +819,244 @@
         {
           "champ": "Yunara",
           "games": 10,
-          "wins": 4
+          "wins": 4,
+          "pos": {
+            "adc": [
+              10,
+              4
+            ]
+          }
         },
         {
           "champ": "Aatrox",
           "games": 7,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "top": [
+              7,
+              2
+            ]
+          }
         },
         {
           "champ": "Caitlyn",
           "games": 6,
-          "wins": 4
+          "wins": 4,
+          "pos": {
+            "adc": [
+              6,
+              4
+            ]
+          }
         },
         {
           "champ": "Fiora",
           "games": 5,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "top": [
+              5,
+              3
+            ]
+          }
         },
         {
           "champ": "Jhin",
           "games": 5,
-          "wins": 4
+          "wins": 4,
+          "pos": {
+            "adc": [
+              5,
+              4
+            ]
+          }
         },
         {
           "champ": "Ryze",
           "games": 3,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "top": [
+              3,
+              2
+            ]
+          }
         },
         {
           "champ": "Mordekaiser",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "top": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Xayah",
           "games": 2,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "adc": [
+              2,
+              2
+            ]
+          }
         },
         {
           "champ": "Jinx",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Nasus",
           "games": 2,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "top": [
+              2,
+              2
+            ]
+          }
         },
         {
           "champ": "Ornn",
           "games": 2,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "top": [
+              2,
+              2
+            ]
+          }
         },
         {
           "champ": "Kaisa",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Xerath",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Jayce",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "top": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Vayne",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "top": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Gwen",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "top": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Akali",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "top": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Smolder",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "top": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Viktor",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "adc": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Aphelios",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Lucian",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "adc": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Corki",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "top": [
+              1,
+              0
+            ]
+          }
         }
       ],
       "mastery": [
@@ -714,97 +1150,219 @@
         {
           "champ": "Karma",
           "games": 16,
-          "wins": 9
+          "wins": 9,
+          "pos": {
+            "support": [
+              14,
+              8
+            ],
+            "mid": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Thresh",
           "games": 8,
-          "wins": 4
+          "wins": 4,
+          "pos": {
+            "support": [
+              8,
+              4
+            ]
+          }
         },
         {
           "champ": "Hwei",
           "games": 4,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              2,
+              1
+            ],
+            "mid": [
+              2,
+              0
+            ]
+          }
         },
         {
           "champ": "Blitzcrank",
           "games": 4,
-          "wins": 3
+          "wins": 3,
+          "pos": {
+            "support": [
+              4,
+              3
+            ]
+          }
         },
         {
           "champ": "Braum",
           "games": 4,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "support": [
+              4,
+              2
+            ]
+          }
         },
         {
           "champ": "Renata",
           "games": 3,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              3,
+              1
+            ]
+          }
         },
         {
           "champ": "Rammus",
           "games": 3,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "support": [
+              3,
+              2
+            ]
+          }
         },
         {
           "champ": "Lulu",
           "games": 3,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "support": [
+              3,
+              2
+            ]
+          }
         },
         {
           "champ": "Bard",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Morgana",
           "games": 2,
-          "wins": 2
+          "wins": 2,
+          "pos": {
+            "support": [
+              2,
+              2
+            ]
+          }
         },
         {
           "champ": "Seraphine",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "Milio",
           "games": 2,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              2,
+              1
+            ]
+          }
         },
         {
           "champ": "TahmKench",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Amumu",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Skarner",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "support": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Lux",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "support": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Maokai",
           "games": 1,
-          "wins": 1
+          "wins": 1,
+          "pos": {
+            "support": [
+              1,
+              1
+            ]
+          }
         },
         {
           "champ": "Soraka",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "support": [
+              1,
+              0
+            ]
+          }
         },
         {
           "champ": "Alistar",
           "games": 1,
-          "wins": 0
+          "wins": 0,
+          "pos": {
+            "support": [
+              1,
+              0
+            ]
+          }
         }
       ],
       "mastery": [
