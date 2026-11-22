@@ -586,7 +586,8 @@ async function main() {
   S.champs = list; S.champMap = new Map(list.map((c) => [c.id, c])); S.source = source;
   const [meta, collected, attrs] = await Promise.all([loadJson('data/meta.json'), loadJson('data/team.json'), loadJson('data/champ-attrs.json')]);
   // Riot 클라이언트의 챔피언 성향 등급(CC 등). 없으면 data/traits.js 수동 분류만 쓴다.
-  for (const [id, a] of Object.entries(attrs?.champs || {})) { const c = S.champMap.get(id); if (c) Object.assign(c, a); }
+  const lower = new Map([...S.champMap.values()].map((c) => [c.id.toLowerCase(), c]));
+  for (const [id, a] of Object.entries(attrs?.champs || {})) { const c = lower.get(id.toLowerCase()); if (c) Object.assign(c, a); }
   S.meta = meta?.games ? meta : null;
   S.collected = collected?.members?.length ? collected : null;
   // 처음 열었거나, 수집 데이터로 만든 팀인데 더 새 수집 결과가 있으면 다시 채운다(상대하기 싫은 챔피언·경계 목록은 유지)

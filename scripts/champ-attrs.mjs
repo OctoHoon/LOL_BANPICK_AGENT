@@ -29,7 +29,8 @@ export function pickAttrs(d) {
 
 async function main() {
   const summary = await get(`${BASE}/champion-summary.json`);
-  const list = summary.filter((c) => c.id > 0);
+  // 이벤트 모드 전용 변형(예: Jade_Annie)은 뺀다
+  const list = summary.filter((c) => c.id > 0 && c.id < 10000 && !c.alias.includes('_'));
   const champs = {};
   let shown = false;
   for (const c of list) {
