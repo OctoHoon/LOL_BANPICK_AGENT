@@ -6,6 +6,12 @@ on:
   schedule:
     - cron: '0 20 * * *' # 매일 한국 시각 05:00
   workflow_dispatch:
+    inputs:
+      mode:
+        description: '수집 범위'
+        type: choice
+        options: [all, members, meta]
+        default: all
 
 permissions:
   contents: write
@@ -26,7 +32,9 @@ jobs:
       - name: 수집
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
-        run: node scripts/collect.mjs
+        run: |
+          MODE="${{ github.event.inputs.mode || 'all' }}"
+          if [ "$MODE" = all ]; then node scripts/collect.mjs; else node scripts/collect.mjs --$MODE; fi
       - name: 변경분 커밋
         run: |
           git config user.name "banpick-collector"

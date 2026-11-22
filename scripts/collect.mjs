@@ -91,9 +91,15 @@ async function writeJson(file, data, pretty = false) {
 export async function collectMembers(api, cfg) {
   const cache = await readJson('data/raw/member-matches.json', {});
   const out = [];
+  // 계정을 먼저 모두 찾아야 "팀원끼리 같은 팀이었는지"를 경기마다 바로 셀 수 있다
+  const accounts = [];
   for (const m of cfg.members) {
     const [gameName, tagLine] = m.riotId.split('#');
-    const acc = await api.get('regional', `/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+    accounts.push(await api.get('regional', `/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`));
+  }
+  const memberPuuids = new Set(accounts.filter(Boolean).map((a) => a.puuid));
+  for (const [mi, m] of cfg.members.entries()) {
+    const acc = accounts[mi];
     if (!acc) { log(`계정을 찾지 못함: ${m.riotId}`); out.push({ riotId: m.riotId, error: 'not_found' }); continue; }
     const puuid = acc.puuid;
     const mastery = (await api.get('platform', `/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=15`)) || [];
@@ -117,8 +123,13 @@ export async function collectMembers(api, cfg) {
         cache[key] = {
           champ: champId(me.championName), pos: POS[me.teamPosition] || null, win: me.win,
           queue: match.info.queueId, at: match.info.gameStartTimestamp,
-          mates: match.info.participants.filter((p) => p.teamId === me.teamId && p.puuid !== puuid).map((p) => p.puuid),
+          // 공개 저장소에 남는 파일이라 다른 사람의 식별자는 저장하지 않고 팀원 수만 센다
+          withMembers: match.info.participants.filter((p) => p.teamId === me.teamId && p.puuid !== puuid && memberPuuids.has(p.puuid)).length,
         };
+      }
+      if (cache[key].mates) { // 이전 형식 정리
+        cache[key].withMembers = cache[key].mates.filter((x) => memberPuuids.has(x)).length;
+        delete cache[key].mates;
       }
       if (!cache[key].skip) games.push(cache[key]);
     }
@@ -126,8 +137,9 @@ export async function collectMembers(api, cfg) {
     const byChamp = new Map();
     const roles = {};
     for (const g of games) {
-      const c = byChamp.get(g.champ) || { champ: g.champ, games: 0, wins: 0 };
+      const c = byChamp.get(g.champ) || { champ: g.champ, games: 0, wins: 0, pos: {} };
       c.games += 1; if (g.win) c.wins += 1;
+      if (g.pos) { const v = c.pos[g.pos] || (c.pos[g.pos] = [0, 0]); v[0] += 1; if (g.win) v[1] += 1; }
       byChamp.set(g.champ, c);
       if (g.pos) roles[g.pos] = (roles[g.pos] || 0) + 1;
     }
@@ -146,10 +158,9 @@ export async function collectMembers(api, cfg) {
   }
 
   // 팀원끼리 같은 팀으로 뛴 경기(자유 랭크 함께 한 판) 집계
-  const puuids = new Set(out.map((m) => m.puuid).filter(Boolean));
   for (const m of out) {
     if (!m.recent) continue;
-    m.withTeam = m.recent.filter((g) => g.mates?.some((p) => puuids.has(p))).length;
+    m.withTeam = m.recent.filter((g) => g.withMembers > 0).length;
   }
   const publicOut = out.map(({ recent, puuid, ...rest }) => rest); // puuid·경기 목록은 공개 파일에 넣지 않는다
 

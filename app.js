@@ -400,7 +400,7 @@ function bind() {
     if (m && t.dataset.delHate != null) { m.hates.splice(Number(t.dataset.delHate), 1); save(); renderTeam(); return; }
     if (t.dataset.delThreat != null) { S.team.threats.splice(Number(t.dataset.delThreat), 1); save(); renderTeam(); return; }
     if (t.id === 'loadCollected' && S.collected) {
-      S.team = teamFromCollected(S.collected, S.champMap, S.team); save(); render();
+      S.team = teamFromCollected(S.collected, S.champMap, S.team, S.meta); save(); render();
       toast('수집한 최근 랭크 전적으로 챔프폭을 채웠습니다. 주력·가능·연습은 판수로 임시 판정했습니다.');
       return;
     }
@@ -489,7 +489,7 @@ async function main() {
   const [meta, collected] = await Promise.all([loadJson('data/meta.json'), loadJson('data/team.json')]);
   S.meta = meta?.games ? meta : null;
   S.collected = collected?.members?.length ? collected : null;
-  if (S.fresh && S.collected) { S.team = teamFromCollected(S.collected, S.champMap, S.team); save(); }
+  if (S.fresh && S.collected) { S.team = teamFromCollected(S.collected, S.champMap, S.team, S.meta); save(); }
   render();
   if (S.toast) toast(S.toast);
 }
