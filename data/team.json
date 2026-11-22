@@ -1,0 +1,890 @@
+{
+  "updatedAt": "2026-11-22T14:04:42.439Z",
+  "members": [
+    {
+      "riotId": "ヨイショト#hooon",
+      "mainRole": "jungle",
+      "roles": {
+        "support": 14,
+        "adc": 15,
+        "top": 11,
+        "jungle": 18,
+        "mid": 2
+      },
+      "games": 60,
+      "champs": [
+        {
+          "champ": "Evelynn",
+          "games": 13,
+          "wins": 6
+        },
+        {
+          "champ": "Velkoz",
+          "games": 6,
+          "wins": 4
+        },
+        {
+          "champ": "Ezreal",
+          "games": 5,
+          "wins": 3
+        },
+        {
+          "champ": "Lux",
+          "games": 5,
+          "wins": 4
+        },
+        {
+          "champ": "Leona",
+          "games": 3,
+          "wins": 2
+        },
+        {
+          "champ": "Lulu",
+          "games": 3,
+          "wins": 1
+        },
+        {
+          "champ": "Malphite",
+          "games": 3,
+          "wins": 3
+        },
+        {
+          "champ": "Lissandra",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Poppy",
+          "games": 2,
+          "wins": 0
+        },
+        {
+          "champ": "JarvanIV",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "KogMaw",
+          "games": 2,
+          "wins": 2
+        },
+        {
+          "champ": "Xayah",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Bard",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Seraphine",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Zac",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Darius",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Viego",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Jhin",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Ziggs",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Senna",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Sivir",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Zyra",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Neeko",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Ahri",
+          "games": 1,
+          "wins": 1
+        }
+      ],
+      "mastery": [
+        {
+          "championId": 103,
+          "points": 699896,
+          "level": 66
+        },
+        {
+          "championId": 99,
+          "points": 315886,
+          "level": 31
+        },
+        {
+          "championId": 117,
+          "points": 180651,
+          "level": 19
+        },
+        {
+          "championId": 25,
+          "points": 140123,
+          "level": 15
+        },
+        {
+          "championId": 28,
+          "points": 86636,
+          "level": 11
+        },
+        {
+          "championId": 420,
+          "points": 84105,
+          "level": 10
+        },
+        {
+          "championId": 133,
+          "points": 81550,
+          "level": 10
+        },
+        {
+          "championId": 51,
+          "points": 76595,
+          "level": 10
+        },
+        {
+          "championId": 22,
+          "points": 74610,
+          "level": 9
+        },
+        {
+          "championId": 34,
+          "points": 47455,
+          "level": 7
+        },
+        {
+          "championId": 83,
+          "points": 39795,
+          "level": 6
+        },
+        {
+          "championId": 17,
+          "points": 38033,
+          "level": 6
+        },
+        {
+          "championId": 16,
+          "points": 36869,
+          "level": 6
+        },
+        {
+          "championId": 518,
+          "points": 33914,
+          "level": 6
+        },
+        {
+          "championId": 127,
+          "points": 33569,
+          "level": 6
+        }
+      ],
+      "withTeam": 36
+    },
+    {
+      "riotId": "야리야#KR1",
+      "mainRole": "jungle",
+      "roles": {
+        "jungle": 54,
+        "adc": 6
+      },
+      "games": 60,
+      "champs": [
+        {
+          "champ": "Zyra",
+          "games": 20,
+          "wins": 12
+        },
+        {
+          "champ": "Hecarim",
+          "games": 17,
+          "wins": 8
+        },
+        {
+          "champ": "Kalista",
+          "games": 5,
+          "wins": 3
+        },
+        {
+          "champ": "Kindred",
+          "games": 4,
+          "wins": 3
+        },
+        {
+          "champ": "Locke",
+          "games": 3,
+          "wins": 1
+        },
+        {
+          "champ": "Graves",
+          "games": 3,
+          "wins": 1
+        },
+        {
+          "champ": "Khazix",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Vi",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Twitch",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Nidalee",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Qiyana",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Evelynn",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Ekko",
+          "games": 1,
+          "wins": 0
+        }
+      ],
+      "mastery": [
+        {
+          "championId": 141,
+          "points": 55574,
+          "level": 8
+        },
+        {
+          "championId": 9,
+          "points": 27374,
+          "level": 5
+        },
+        {
+          "championId": 143,
+          "points": 26459,
+          "level": 5
+        },
+        {
+          "championId": 120,
+          "points": 19982,
+          "level": 4
+        },
+        {
+          "championId": 245,
+          "points": 18291,
+          "level": 4
+        },
+        {
+          "championId": 805,
+          "points": 15269,
+          "level": 4
+        },
+        {
+          "championId": 142,
+          "points": 10794,
+          "level": 3
+        },
+        {
+          "championId": 7,
+          "points": 9961,
+          "level": 3
+        },
+        {
+          "championId": 91,
+          "points": 9094,
+          "level": 3
+        },
+        {
+          "championId": 67,
+          "points": 7881,
+          "level": 3
+        },
+        {
+          "championId": 429,
+          "points": 7581,
+          "level": 3
+        },
+        {
+          "championId": 910,
+          "points": 7063,
+          "level": 3
+        },
+        {
+          "championId": 131,
+          "points": 6616,
+          "level": 3
+        },
+        {
+          "championId": 203,
+          "points": 5856,
+          "level": 2
+        },
+        {
+          "championId": 55,
+          "points": 5428,
+          "level": 2
+        }
+      ],
+      "withTeam": 48
+    },
+    {
+      "riotId": "Nica#KR1",
+      "mainRole": "mid",
+      "roles": {
+        "mid": 52,
+        "adc": 4,
+        "top": 2,
+        "jungle": 1
+      },
+      "games": 59,
+      "champs": [
+        {
+          "champ": "Akali",
+          "games": 34,
+          "wins": 22
+        },
+        {
+          "champ": "Quinn",
+          "games": 6,
+          "wins": 3
+        },
+        {
+          "champ": "Qiyana",
+          "games": 6,
+          "wins": 3
+        },
+        {
+          "champ": "Tristana",
+          "games": 4,
+          "wins": 1
+        },
+        {
+          "champ": "Taliyah",
+          "games": 3,
+          "wins": 2
+        },
+        {
+          "champ": "Talon",
+          "games": 3,
+          "wins": 1
+        },
+        {
+          "champ": "Zoe",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Lillia",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Smolder",
+          "games": 1,
+          "wins": 0
+        }
+      ],
+      "mastery": [
+        {
+          "championId": 84,
+          "points": 643257,
+          "level": 59
+        },
+        {
+          "championId": 163,
+          "points": 642493,
+          "level": 61
+        },
+        {
+          "championId": 91,
+          "points": 360552,
+          "level": 35
+        },
+        {
+          "championId": 246,
+          "points": 225097,
+          "level": 23
+        },
+        {
+          "championId": 142,
+          "points": 214068,
+          "level": 22
+        },
+        {
+          "championId": 133,
+          "points": 161913,
+          "level": 17
+        },
+        {
+          "championId": 105,
+          "points": 158904,
+          "level": 17
+        },
+        {
+          "championId": 7,
+          "points": 143863,
+          "level": 16
+        },
+        {
+          "championId": 164,
+          "points": 73658,
+          "level": 9
+        },
+        {
+          "championId": 126,
+          "points": 68997,
+          "level": 9
+        },
+        {
+          "championId": 203,
+          "points": 61892,
+          "level": 8
+        },
+        {
+          "championId": 18,
+          "points": 61497,
+          "level": 8
+        },
+        {
+          "championId": 90,
+          "points": 60603,
+          "level": 8
+        },
+        {
+          "championId": 166,
+          "points": 42663,
+          "level": 7
+        },
+        {
+          "championId": 236,
+          "points": 42414,
+          "level": 6
+        }
+      ],
+      "withTeam": 59
+    },
+    {
+      "riotId": "신동우#KR1",
+      "mainRole": "adc",
+      "roles": {
+        "top": 27,
+        "adc": 32
+      },
+      "games": 59,
+      "champs": [
+        {
+          "champ": "Yunara",
+          "games": 10,
+          "wins": 4
+        },
+        {
+          "champ": "Aatrox",
+          "games": 7,
+          "wins": 2
+        },
+        {
+          "champ": "Caitlyn",
+          "games": 6,
+          "wins": 4
+        },
+        {
+          "champ": "Fiora",
+          "games": 5,
+          "wins": 3
+        },
+        {
+          "champ": "Jhin",
+          "games": 5,
+          "wins": 4
+        },
+        {
+          "champ": "Ryze",
+          "games": 3,
+          "wins": 2
+        },
+        {
+          "champ": "Mordekaiser",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Xayah",
+          "games": 2,
+          "wins": 2
+        },
+        {
+          "champ": "Jinx",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Nasus",
+          "games": 2,
+          "wins": 2
+        },
+        {
+          "champ": "Ornn",
+          "games": 2,
+          "wins": 2
+        },
+        {
+          "champ": "Kaisa",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Xerath",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Jayce",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Vayne",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Gwen",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Akali",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Smolder",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Viktor",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Aphelios",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Lucian",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Corki",
+          "games": 1,
+          "wins": 0
+        }
+      ],
+      "mastery": [
+        {
+          "championId": 266,
+          "points": 190271,
+          "level": 20
+        },
+        {
+          "championId": 901,
+          "points": 157751,
+          "level": 17
+        },
+        {
+          "championId": 76,
+          "points": 146765,
+          "level": 16
+        },
+        {
+          "championId": 114,
+          "points": 124146,
+          "level": 14
+        },
+        {
+          "championId": 13,
+          "points": 123685,
+          "level": 14
+        },
+        {
+          "championId": 145,
+          "points": 106549,
+          "level": 12
+        },
+        {
+          "championId": 34,
+          "points": 99610,
+          "level": 12
+        },
+        {
+          "championId": 516,
+          "points": 98028,
+          "level": 12
+        },
+        {
+          "championId": 104,
+          "points": 86683,
+          "level": 11
+        },
+        {
+          "championId": 236,
+          "points": 80438,
+          "level": 10
+        },
+        {
+          "championId": 517,
+          "points": 67499,
+          "level": 9
+        },
+        {
+          "championId": 112,
+          "points": 61923,
+          "level": 8
+        },
+        {
+          "championId": 81,
+          "points": 57075,
+          "level": 8
+        },
+        {
+          "championId": 36,
+          "points": 56530,
+          "level": 8
+        },
+        {
+          "championId": 51,
+          "points": 52037,
+          "level": 7
+        }
+      ],
+      "withTeam": 59
+    },
+    {
+      "riotId": "민트초코스무디#1557",
+      "mainRole": "support",
+      "roles": {
+        "support": 56,
+        "mid": 4
+      },
+      "games": 60,
+      "champs": [
+        {
+          "champ": "Karma",
+          "games": 16,
+          "wins": 9
+        },
+        {
+          "champ": "Thresh",
+          "games": 8,
+          "wins": 4
+        },
+        {
+          "champ": "Hwei",
+          "games": 4,
+          "wins": 1
+        },
+        {
+          "champ": "Blitzcrank",
+          "games": 4,
+          "wins": 3
+        },
+        {
+          "champ": "Braum",
+          "games": 4,
+          "wins": 2
+        },
+        {
+          "champ": "Renata",
+          "games": 3,
+          "wins": 1
+        },
+        {
+          "champ": "Rammus",
+          "games": 3,
+          "wins": 2
+        },
+        {
+          "champ": "Lulu",
+          "games": 3,
+          "wins": 2
+        },
+        {
+          "champ": "Bard",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Morgana",
+          "games": 2,
+          "wins": 2
+        },
+        {
+          "champ": "Seraphine",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "Milio",
+          "games": 2,
+          "wins": 1
+        },
+        {
+          "champ": "TahmKench",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Amumu",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Skarner",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Lux",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Maokai",
+          "games": 1,
+          "wins": 1
+        },
+        {
+          "champ": "Soraka",
+          "games": 1,
+          "wins": 0
+        },
+        {
+          "champ": "Alistar",
+          "games": 1,
+          "wins": 0
+        }
+      ],
+      "mastery": [
+        {
+          "championId": 43,
+          "points": 1803448,
+          "level": 157
+        },
+        {
+          "championId": 412,
+          "points": 967661,
+          "level": 86
+        },
+        {
+          "championId": 103,
+          "points": 479500,
+          "level": 44
+        },
+        {
+          "championId": 888,
+          "points": 466655,
+          "level": 45
+        },
+        {
+          "championId": 53,
+          "points": 446501,
+          "level": 43
+        },
+        {
+          "championId": 147,
+          "points": 274691,
+          "level": 28
+        },
+        {
+          "championId": 267,
+          "points": 258404,
+          "level": 26
+        },
+        {
+          "championId": 89,
+          "points": 216319,
+          "level": 22
+        },
+        {
+          "championId": 117,
+          "points": 213946,
+          "level": 22
+        },
+        {
+          "championId": 99,
+          "points": 207103,
+          "level": 21
+        },
+        {
+          "championId": 497,
+          "points": 206328,
+          "level": 21
+        },
+        {
+          "championId": 201,
+          "points": 205272,
+          "level": 21
+        },
+        {
+          "championId": 22,
+          "points": 197794,
+          "level": 17
+        },
+        {
+          "championId": 78,
+          "points": 179201,
+          "level": 19
+        },
+        {
+          "championId": 57,
+          "points": 176520,
+          "level": 19
+        }
+      ],
+      "withTeam": 45
+    }
+  ]
+}
