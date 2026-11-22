@@ -13,6 +13,7 @@
   --ad: #f08a4b;
   --ap: #8b7cf6;
   --radius: 10px;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
