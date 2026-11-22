@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>밴픽 도우미</title>
+  <meta name="description" content="팀원 챔프폭을 기반으로 리그 오브 레전드 밴픽을 추천합니다.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="header" class="header"></header>
+  <main id="main"><p class="muted loading">챔피언 데이터를 불러오는 중…</p></main>
+  <footer class="footer">
+    <span id="source"></span>
+    <span>추천은 팀이 입력한 챔프폭과 간단한 규칙으로 계산합니다. 이 앱은 Riot Games의 공식 서비스가 아니며 Riot Games의 견해를 대변하지 않습니다.</span>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
