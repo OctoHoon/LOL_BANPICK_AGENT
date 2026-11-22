@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { BASE_CHAMPIONS } from '../data/champions.js';
 import { SAMPLE_TEAM } from '../data/sample.js';
 import {
-  draftSequence, currentStep, recommendPicks, recommendBans, guessMember, matchChampion, teamProfile,
+  draftSequence, currentStep, recommendPicks, recommendBans, guessMember, matchChampion, teamProfile, ROLES,
 } from '../logic.js';
 
 const champMap = new Map(BASE_CHAMPIONS.map((c) => [c.id, c]));
@@ -269,4 +269,31 @@ test('유명 바텀 조합 가산', () => {
   const recs = rp({ team, actions, seq, assign: { 10: 'm4' }, assignRole: { 10: 'adc' } }, champMap, 50);
   const nau = recs.find((r) => r.champ === 'Nautilus');
   assert.ok(nau.reasons.some((x) => x.startsWith('유명 바텀 조합: 카이사와')));
+});
+
+test('미드·정글 조합과 운영 가이드', async () => {
+  const { gamePlan } = await import('../logic.js');
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  actions[13] = 'JarvanIV';
+  const recs = rp({ team, actions, seq, assign: { 13: 'm2' }, assignRole: { 13: 'jungle' } }, champMap, 50);
+  assert.ok(recs.find((r) => r.champ === 'Orianna').reasons.some((x) => x.startsWith('유명 미드·정글 조합: 자르반 4세와')));
+  // 밴픽 완료 상태
+  const picks = seq.map((s, i) => [s, i]).filter(([s]) => s.type === 'pick');
+  const blue = ['Ornn', 'LeeSin', 'Ahri', 'Jinx', 'Lulu'], red = ['Darius', 'Khazix', 'Zed', 'Draven', 'Leona'];
+  const assign = {}, assignRole = {};
+  let bi = 0, ri = 0;
+  for (const [s, i] of picks) {
+    if (s.side === 'blue') { actions[i] = blue[bi]; assign[i] = `m${bi + 1}`; assignRole[i] = ROLES[bi].id; bi += 1; } else { actions[i] = red[ri]; ri += 1; }
+  }
+  const plan = gamePlan({ team, actions, seq, assign, assignRole }, champMap, META);
+  const all = plan.flatMap((x) => x.items).join('\n');
+  assert.ok(all.includes('상대가 초반에 강합니다'));
+  assert.ok(all.includes('후반은 우리 쪽'));
+  assert.ok(all.includes('상대 돌진'));
+});
+
+test('라인을 정해 두면 그 라인 챔피언은 그 팀원 몫으로 추정', () => {
+  // 아리는 m3 미드 챔프폭이지만 미드를 m1 에게 정해 두면 m1 몫으로
+  assert.deepEqual(guessMember(team, 'Ahri', new Set(), new Set(), { m1: 'mid', m3: 'top' }), { id: 'm1', role: 'mid' });
 });

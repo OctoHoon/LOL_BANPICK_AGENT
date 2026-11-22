@@ -173,3 +173,6 @@ details.pool-group > summary { cursor: pointer; padding: 2px 0; }
 .lineup-item { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
 .lineup-item span { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lineup-item select { padding: 4px 6px; font-size: 13px; }
+.plan h4 { margin: 10px 0 4px; font-size: 13px; color: var(--gold); }
+.plan ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.plan li { font-size: 13px; }

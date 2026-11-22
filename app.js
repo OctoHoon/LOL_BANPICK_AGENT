@@ -3,7 +3,7 @@ import { teamFromCollected } from './team-data.js';
 import { SAMPLE_TEAM } from './data/sample.js';
 import {
   assignEnemyPositions, ourAssignments, roleShare, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
-  recommendPicks, recommendBans, guessMember, matchChampion, compSummary,
+  recommendPicks, recommendBans, guessMember, matchChampion, compSummary, gamePlan,
 } from './logic.js';
 
 const STORE = 'banpick.state.v1';
@@ -204,7 +204,11 @@ function recoItem(r, kind) {
 function renderReco() {
   const cur = currentStep(S.actions);
   if (cur == null) {
-    return `<div class="banner done">밴픽이 끝났습니다. 슬롯을 눌러 수정하거나 새로 시작하세요.</div>`;
+    const st = { team: S.team, actions: S.actions, seq: seq(), assign: S.assign, assignRole: S.assignRole };
+    const plan = gamePlan(st, S.champMap, S.meta);
+    return `<div class="banner done">밴픽이 끝났습니다. 슬롯을 눌러 수정하거나 새로 시작하세요.</div>
+      <div class="reco-box plan"><h3>운영 가이드 <small>조합 성향과 상위권 통계로 뽑은 일반 원칙입니다</small></h3>
+      ${plan.map((sec) => `<h4>${esc(sec.title)}</h4><ul>${sec.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</div>`;
   }
   const s = seq()[cur];
   const ours = s.side === S.team.side;

@@ -28,3 +28,20 @@ export const FAMOUS_DUOS = [
 ];
 
 export const DUO_MAP = new Map(FAMOUS_DUOS.map(([a, s, why]) => [`${a}|${s}`, why]));
+
+// 널리 알려진 미드·정글 궁합. [미드 id, 정글 id, 이유]
+export const FAMOUS_MIDJG = [
+  ['Orianna', 'JarvanIV', '진입하는 자르반에 공을 붙여 궁 연계'],
+  ['Orianna', 'Vi', '진입하는 바이에 공을 붙여 궁 연계'],
+  ['Orianna', 'Hecarim', '돌진하는 헤카림에 공을 붙여 궁 연계'],
+  ['Orianna', 'Nocturne', '궁으로 날아가는 녹턴에 공을 붙여 연계'],
+  ['Orianna', 'MonkeyKing', '오공 궁과 오리아나 궁 광역 CC 연계'],
+  ['TwistedFate', 'Nocturne', '둘 다 전역 궁으로 사이드 기습'],
+  ['TwistedFate', 'Elise', '카드 기절 뒤 엘리스 고치 연계 갱킹'],
+  ['Galio', 'Nocturne', '녹턴 궁 진입을 갈리오 궁으로 따라감'],
+  ['Galio', 'Vi', '바이 궁 진입을 갈리오 궁으로 따라감'],
+  ['Yasuo', 'JarvanIV', '자르반 깃발 연계 에어본으로 야스오 궁'],
+  ['Yasuo', 'Gragas', '그라가스 몸통 박치기 에어본으로 야스오 궁'],
+];
+
+export const MIDJG_MAP = new Map(FAMOUS_MIDJG.map(([m, j, why]) => [`${m}|${j}`, why]));

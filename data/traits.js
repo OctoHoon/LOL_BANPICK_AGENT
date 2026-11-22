@@ -11,6 +11,8 @@
 // protect  : 아군 캐리를 지키는 보호·회복형 서포터
 // hypercarry: 성장하면 한타를 혼자 책임지는 후반 캐리
 // aoe      : 이니시 뒤에 광역 피해·광역 CC로 한타를 터뜨리는 챔피언
+// early    : 초반 라인전·교전이 강하고 후반에 힘이 빠지는 챔피언
+// late     : 후반으로 갈수록 강해지는 챔피언(hypercarry 포함으로 본다)
 // cc       : 확실한 하드 CC(기절·속박·에어본 등)가 있는 챔피언. Riot 클라이언트 CC 등급(data/champ-attrs.json)이 있으면 그쪽을 우선한다.
 export const TRAITS = {
   dive: [
@@ -54,6 +56,14 @@ export const TRAITS = {
   aoe: [
     'Amumu', 'Annie', 'Diana', 'Fiddlesticks', 'Galio', 'Kennen', 'Malphite', 'MissFortune', 'MonkeyKing',
     'Orianna', 'Rumble', 'Seraphine', 'Sona', 'Yasuo',
+  ],
+  early: [
+    'Darius', 'Draven', 'Elise', 'JarvanIV', 'Jayce', 'Kalista', 'LeeSin', 'Leblanc', 'Lucian', 'Nidalee',
+    'Olaf', 'Pantheon', 'Renekton', 'Rengar', 'Talon', 'XinZhao', 'Pyke', 'Leona', 'Draven', 'Graves', 'Kled',
+  ],
+  late: [
+    'Aphelios', 'AurelionSol', 'Azir', 'Cassiopeia', 'Jinx', 'Kaisa', 'Kassadin', 'Kayle', 'KogMaw', 'Nasus',
+    'Senna', 'Smolder', 'Twitch', 'Vayne', 'Veigar', 'Viktor', 'Vladimir', 'Xayah', 'Zeri', 'Ryze',
   ],
   cc: [
     'Alistar', 'Amumu', 'Annie', 'Ashe', 'Blitzcrank', 'Braum', 'Galio', 'Gragas', 'JarvanIV', 'Kennen',

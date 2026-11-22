@@ -1,6 +1,6 @@
 // 밴픽 순서와 추천 계산. 화면 코드와 분리해 node 로도 시험할 수 있게 했다.
 import { TRAIT_SETS, IDENTITIES } from './data/traits.js';
-import { DUO_MAP } from './data/botlane.js';
+import { DUO_MAP, MIDJG_MAP } from './data/botlane.js';
 
 export const ROLES = [
   { id: 'top', label: '탑' },
@@ -215,6 +215,10 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
       const mate = role === 'adc' ? ourByRole.support : role === 'support' ? ourByRole.adc : null;
       const duoWhy = mate && DUO_MAP.get(role === 'adc' ? `${p.champ}|${mate}` : `${mate}|${p.champ}`);
       if (duoWhy) { score += 5; reasons.push(`유명 바텀 조합: ${champMap.get(mate)?.name ?? mate}와 (${duoWhy})`); }
+      // 널리 알려진 미드·정글
+      const mj = role === 'mid' ? ourByRole.jungle : role === 'jungle' ? ourByRole.mid : null;
+      const mjWhy = mj && MIDJG_MAP.get(role === 'mid' ? `${p.champ}|${mj}` : `${mj}|${p.champ}`);
+      if (mjWhy) { score += 5; reasons.push(`유명 미드·정글 조합: ${champMap.get(mj)?.name ?? mj}와 (${mjWhy})`); }
 
       const cr = compReasons(p.champ, enemyPicks, ourPicks.map((x) => x.champ), champMap);
       score += cr.score;
@@ -248,8 +252,12 @@ export function compIdentity(champIds) {
   for (const [k, v] of Object.entries(IDENTITIES)) {
     scores[k] = champIds.filter((id) => v.traits.some((t) => hasTrait(t, id))).length;
   }
-  const [top, n] = Object.entries(scores).sort((a, b) => b[1] - a[1])[0] || [];
-  return { scores, main: n >= 2 ? top : null, label: n >= 2 ? IDENTITIES[top].label : null };
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const n = sorted[0]?.[1] ?? 0;
+  if (n < 2) return { scores, main: null, all: [], label: null };
+  // 동점이면 두 색깔을 함께 본다(예: 돌진형·캐리 보호형)
+  const all = sorted.filter(([, v]) => v === n).map(([k]) => k).slice(0, 2);
+  return { scores, main: all[0], all, label: all.map((k) => IDENTITIES[k].label).join('·') };
 }
 
 export function compSummary(champIds, champMap) {
@@ -261,7 +269,7 @@ export function compSummary(champIds, champMap) {
     protect: has('protect'), hypercarry: has('hypercarry'), aoe: has('aoe'),
     cc: champIds.filter((x) => isCC(x, champMap)),
     front: prof.front, ad: prof.ad, ap: prof.ap, count: champIds.length,
-    identity: id.main, identityLabel: id.label,
+    identity: id.main, identities: id.all, identityLabel: id.label,
   };
 }
 
@@ -283,16 +291,18 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap) {
   if (e.front >= 2 && is('tankshred')) add(Math.min(8, 4 * (e.front - 1)), `상대 앞라인 ${e.front}명이라 탱커 녹이기에 좋음`);
   if (e.poke.length >= 2 && (is('engage') || is('dive'))) add(6, `상대 포킹 조합(${names(e.poke)})은 거리를 좁혀 붙는 쪽이 유리`);
   if (e.count >= 3 && e.front === 0 && is('dive')) add(5, '상대 앞라인이 없어 후방 진입이 쉬움');
-  if (e.identity === 'engage' && is('antidive')) add(5, '상대 한타 이니시를 받아치기(디스인게이지) 좋음');
-  if (e.identity === 'protect' && is('poke')) add(5, '상대 캐리 보호 조합은 멀리서 깎아 내는 포킹에 약함');
+  if (e.identities.includes('engage') && is('antidive')) add(5, '상대 한타 이니시를 받아치기(디스인게이지) 좋음');
+  if (e.identities.includes('protect') && is('poke')) add(5, '상대 캐리 보호 조합은 멀리서 깎아 내는 포킹에 약함');
   if (e.hypercarry.length && (is('dive') || is('pick'))) add(4, `상대 후반 캐리(${names(e.hypercarry)})를 노리기 좋음`);
-  if (e.identity === 'split' && (is('engage') || is('aoe'))) add(3, '상대가 스플릿하는 동안 4대5 한타 강제');
+  if (e.identities.includes('split') && (is('engage') || is('aoe'))) add(3, '상대가 스플릿하는 동안 4대5 한타 강제');
+  if (e.count >= 3 && e.ap < 1 && champMap.get(champ)?.front) add(3, `상대가 AD 위주(AD ${e.ad}, AP ${e.ap})라 방어력 아이템만으로 버티기 좋음`);
+  if (e.count >= 3 && e.ad < 1 && champMap.get(champ)?.front) add(3, `상대가 AP 위주(AD ${e.ad}, AP ${e.ap})라 마법 저항 아이템만으로 버티기 좋음`);
 
   // 우리 조합과의 궁합
   const o = compSummary(ourPicks, champMap);
   if (o.count >= 2 && o.engage.length === 0 && is('engage')) add(5, '우리 조합에 이니시 부족');
   if (o.identity) {
-    const fits = IDENTITIES[o.identity].traits.some((t) => is(t));
+    const fits = o.identities.some((k) => IDENTITIES[k].traits.some((t) => is(t)));
     if (fits) add(5, `우리 조합 색깔(${o.identityLabel})에 맞음`);
   }
   if (o.hypercarry.length && is('protect')) add(6, `우리 캐리(${names(o.hypercarry)}) 보호`);
@@ -478,6 +488,9 @@ export function guessMember(team, champ, filled, takenRoles = new Set(), lineup 
     const role = m && takenRoles.has(roleOf(m)) ? ROLES.map((r) => r.id).find((r) => !takenRoles.has(r)) : m && roleOf(m);
     return m ? { id: m.id, role } : null;
   }
+  // 그 챔피언의 라인을 맡기로 정해 둔 팀원이 따로 있으면, 챔프폭에 없더라도 그 팀원 몫으로 본다
+  const owner = team.members.find((x) => !filled.has(x.id) && lineup[x.id] === best.role);
+  if (owner && owner.id !== best.id && lineup[best.id] !== best.role) return { id: owner.id, role: best.role };
   return { id: best.id, role: best.role };
 }
 
@@ -495,4 +508,85 @@ export function matchChampion(c, q) {
   if (!query) return true;
   const name = c.name.replace(/\s/g, '');
   return name.includes(query) || c.id.toLowerCase().includes(query) || chosung(name).includes(query);
+}
+
+// ---------- 밴픽 뒤 운영 가이드 ----------
+// 조합 색깔·초후반 강세·피해 유형·라인 상성에서 뽑은 일반 원칙. 경기마다 맞는 정답이 아니라 출발점이다.
+const PLAN_OURS = {
+  engage: '앞라인과 이니시 궁이 준비됐을 때 드래곤·바론 앞에서 한타를 여세요. 이니시 궁이 빠졌으면 싸움을 미루는 편이 낫습니다.',
+  dive: '상대 후방 딜러를 노리세요. 시야가 없는 쪽에서 측면으로 들어가고, 상대 점멸이나 보호 스킬이 빠졌을 때가 기회입니다.',
+  poke: '오브젝트 앞에 먼저 시야를 잡고 체력을 깎은 뒤 싸우세요. 정면 대치는 강하지만 기습에 약하니 측면 와드를 챙기세요.',
+  protect: '캐리를 가운데 두고 진형을 지키세요. 먼저 들어가기보다 들어오는 상대를 받아치는 쪽이 강하고, 후반을 보고 초반 무리를 줄이세요.',
+  split: '스플릿 담당은 사이드를 밀고, 나머지 넷은 한타를 피하며 반대편 오브젝트를 압박하세요. 텔레포트나 합류 타이밍을 맞추세요.',
+  pick: '시야를 넓게 잡고 혼자 다니는 상대를 끊은 뒤 곧바로 오브젝트로 연결하세요.',
+};
+const PLAN_VS = {
+  engage: (n) => `상대 이니시(${n}) 위치를 확인하기 전에는 오브젝트에 들어가지 말고, 좁은 곳에서 뭉치지 마세요.`,
+  dive: (n) => `상대 돌진(${n})이 노리는 건 우리 후방 딜러입니다. 딜러는 앞에 서지 말고 보호 스킬은 진입 뒤에 쓰세요.`,
+  poke: (n) => `상대 포킹(${n})과 길게 대치하지 마세요. 체력이 깎이기 전에 빠르게 붙거나 물러서세요.`,
+  protect: (n) => `상대가 캐리 보호형(${n})입니다. 보호 스킬을 먼저 빼게 만들거나 멀리서 깎은 뒤 싸우세요.`,
+  split: (n) => `상대 스플릿(${n})과 1대1은 피하고, 그 사이 4대5로 오브젝트를 강제하세요.`,
+  pick: (n) => `상대가 끊어먹기형(${n})입니다. 시야 밖으로 혼자 다니지 말고 함께 움직이세요.`,
+};
+
+export function gamePlan(state, champMap, meta = null) {
+  const { team, actions, seq } = state;
+  const enemySide = team.side === 'blue' ? 'red' : 'blue';
+  const ourAsg = ourAssignments(state);
+  const ours = ourAsg.map((a) => a.champ);
+  const enemy = sideChampions(actions, seq, enemySide, 'pick').filter((s) => s.champ).map((s) => s.champ);
+  const nm = (id) => champMap.get(id)?.name ?? id;
+  const names = (a) => a.map(nm).join(', ');
+  const o = compSummary(ours, champMap), e = compSummary(enemy, champMap);
+  const out = [];
+
+  const plan = [];
+  if (o.identity) {
+    plan.push(`우리 조합은 ${o.identityLabel}입니다.`);
+    for (const k of o.identities) plan.push(PLAN_OURS[k]);
+  } else plan.push('우리 조합은 뚜렷한 색깔이 없습니다. 라인전이 유리한 쪽을 중심으로 운영하세요.');
+  for (const k of e.identities) {
+    const members = enemy.filter((id) => IDENTITIES[k].traits.some((t) => TRAIT_SETS[t].has(id)));
+    plan.push(PLAN_VS[k](names(members)));
+  }
+  out.push({ title: '조합 운영', items: plan });
+
+  // 초반·후반 강세
+  const tempo = (ids) => ids.filter((id) => TRAIT_SETS.early.has(id)).length - ids.filter((id) => TRAIT_SETS.late.has(id) || TRAIT_SETS.hypercarry.has(id)).length;
+  const to = tempo(ours), te = tempo(enemy);
+  const t = [];
+  if (to - te >= 2) t.push('우리가 초반에 강합니다. 15분 전에 전령·드래곤과 포탑 골드로 차이를 벌리고, 상대 정글 동선을 압박하세요.');
+  else if (te - to >= 2) t.push('상대가 초반에 강합니다. 초반 교전은 피하고 시야 안에서 성장하며, 상대 정글 반대쪽 오브젝트를 챙기세요.');
+  else t.push('초반 힘은 비슷합니다. 라인 상성이 좋은 쪽에서 주도권을 잡으세요.');
+  const lo = ours.filter((id) => TRAIT_SETS.late.has(id) || TRAIT_SETS.hypercarry.has(id));
+  const le = enemy.filter((id) => TRAIT_SETS.late.has(id) || TRAIT_SETS.hypercarry.has(id));
+  if (lo.length > le.length) t.push(`후반은 우리 쪽(${names(lo)})이 유리합니다. 무리한 싸움보다 시간을 버는 편이 낫습니다.`);
+  else if (le.length > lo.length) t.push(`후반은 상대 쪽(${names(le)})이 유리합니다. 그 전에 끝낼 수 있게 오브젝트를 서두르세요.`);
+  out.push({ title: '초반·후반', items: t });
+
+  // 피해 유형
+  const d = [];
+  const dmgLine = (p) => `AD ${p.ad} · AP ${p.ap}`;
+  if (o.count >= 4 && (o.ap < 1 || o.ad < 1)) d.push(`우리 피해가 한쪽으로 쏠려 있습니다(${dmgLine(o)}). 상대가 방어 아이템 하나로 버틸 수 있으니 관통 아이템을 일찍 챙기세요.`);
+  if (e.count >= 4 && e.ap < 1) d.push(`상대가 거의 AD입니다(${dmgLine(e)}). 앞라인은 방어력 아이템 효율이 좋습니다.`);
+  if (e.count >= 4 && e.ad < 1) d.push(`상대가 거의 AP입니다(${dmgLine(e)}). 앞라인은 마법 저항력 아이템 효율이 좋습니다.`);
+  if (d.length) out.push({ title: '피해 유형', items: d });
+
+  // 라인별 상성(상위권 통계)
+  if (meta) {
+    const ePos = assignEnemyPositions(meta, enemy);
+    const lanes = [];
+    for (const a of ourAsg) {
+      if (!a.role) continue;
+      const foe = Object.entries(ePos).find(([, r]) => r === a.role)?.[0];
+      const v = foe && laneStat(meta, a.role, a.champ, foe);
+      if (!v || v.games < 5) continue;
+      const wr = smoothWr(v.games, v.wins, 30);
+      const label = ROLES.find((r) => r.id === a.role)?.label;
+      if (wr >= 0.53) lanes.push(`${label}: ${nm(a.champ)}가 ${nm(foe)} 상대로 유리(${pct(v.wins / v.games)}, ${v.games}판). 이 라인에서 주도권을 잡고 정글이 이쪽을 도와주세요.`);
+      else if (wr <= 0.47) lanes.push(`${label}: ${nm(a.champ)}가 ${nm(foe)} 상대로 불리(${pct(v.wins / v.games)}, ${v.games}판). 무리하지 말고 파밍 위주로, 정글이 갱킹을 받쳐 주세요.`);
+    }
+    if (lanes.length) out.push({ title: '라인전', items: lanes });
+  }
+  return out;
 }
