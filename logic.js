@@ -263,6 +263,8 @@ export function recommendOffPool(state, champMap, limit = 4, meta = null) {
 // 통계와 별개로, 조합 색깔(이니시·돌진·포킹·보호·스플릿·끊어먹기)과 CC를 보고 가감점을 준다.
 // 대응 관계는 해설·분석가들이 흔히 말하는 통념을 따른다. 절대 규칙이 아니라 기울기만 준다.
 const hasTrait = (t, id) => TRAIT_SETS[t].has(id);
+// 받침 유무에 따라 은/는
+const eunNeun = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 ? '은' : '는'; };
 // Riot 클라이언트의 CC 등급(1~3)이 있으면 3을 하드 CC로 보고, 없으면 수동 목록을 쓴다.
 export const isCC = (id, champMap) => {
   const cc = champMap.get(id)?.cc;
@@ -317,6 +319,15 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap) {
   if (e.identities.includes('protect') && is('poke')) add(5, '상대 캐리 보호 조합은 멀리서 깎아 내는 포킹에 약함');
   if (e.hypercarry.length && (is('dive') || is('pick'))) add(4, `상대 후반 캐리(${names(e.hypercarry)})를 노리기 좋음`);
   if (e.identities.includes('split') && (is('engage') || is('aoe'))) add(3, '상대가 스플릿하는 동안 4대5 한타 강제');
+  // 그랩·단일 CC 서포터는 상대 원딜 기동성에 따라 효율이 크게 갈린다
+  if (is('hook')) {
+    const slip = enemyPicks.filter((id) => hasTrait('slippery', id));
+    const stuck = enemyPicks.filter((id) => hasTrait('immobile', id));
+    const shield = enemyPicks.filter((id) => hasTrait('spellshield', id));
+    if (slip.length) add(-8, `상대 ${names(slip)}${eunNeun(names(slip))} 이동기·방어막으로 그랩을 피하기 쉬움`);
+    else if (stuck.length) add(5, `상대 ${names(stuck)}${eunNeun(names(stuck))} 이동기가 없어 그랩에 잘 걸림`);
+    if (shield.length && !slip.some((x) => shield.includes(x))) add(-4, `상대 ${names(shield)}의 주문 방어막이 그랩을 막음`);
+  }
   if (e.count >= 3 && e.ap < 1 && champMap.get(champ)?.front) add(3, `상대가 AD 위주(AD ${e.ad}, AP ${e.ap})라 방어력 아이템만으로 버티기 좋음`);
   if (e.count >= 3 && e.ad < 1 && champMap.get(champ)?.front) add(3, `상대가 AP 위주(AD ${e.ad}, AP ${e.ap})라 마법 저항 아이템만으로 버티기 좋음`);
 

@@ -315,3 +315,10 @@ test('챔프폭 밖이라도 상성이 아주 좋으면 따로 추천', async ()
   assert.ok(off.every((r) => r.score >= 15));
   assert.ok(!rp({ team: t, actions, seq, assign: {} }, champMap, 50, meta).some((r) => r.offPool));
 });
+
+test('그랩 서포터는 상대 원딜 기동성에 따라 가감', () => {
+  assert.ok(compReasons('Blitzcrank', ['Ezreal'], [], champMap).score < 0);
+  assert.ok(compReasons('Blitzcrank', ['Jhin'], [], champMap).score > 0);
+  assert.ok(compReasons('Blitzcrank', ['Jhin', 'Morgana'], [], champMap).reasons.some((x) => x.includes('주문 방어막')));
+  assert.equal(compReasons('Lulu', ['Ezreal'], [], champMap).score, 0);
+});

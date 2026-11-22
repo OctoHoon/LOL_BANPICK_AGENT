@@ -13,6 +13,10 @@
 // aoe      : 이니시 뒤에 광역 피해·광역 CC로 한타를 터뜨리는 챔피언
 // early    : 초반 라인전·교전이 강하고 후반에 힘이 빠지는 챔피언
 // late     : 후반으로 갈수록 강해지는 챔피언(hypercarry 포함으로 본다)
+// hook     : 그랩·긴 사거리 단일 CC로 한 명을 끌어오거나 묶어 시작하는 서포터
+// slippery : 이동기·주문 방어막으로 그랩을 피하기 쉬운 원딜
+// immobile : 이동기가 없어 그랩에 잘 걸리는 원딜
+// spellshield: 아군을 CC 면역으로 지키는 서포터(그랩 상대로 강함)
 // cc       : 확실한 하드 CC(기절·속박·에어본 등)가 있는 챔피언. Riot 클라이언트 CC 등급(data/champ-attrs.json)이 있으면 그쪽을 우선한다.
 export const TRAITS = {
   dive: [
@@ -65,6 +69,10 @@ export const TRAITS = {
     'Aphelios', 'AurelionSol', 'Azir', 'Cassiopeia', 'Jinx', 'Kaisa', 'Kassadin', 'Kayle', 'KogMaw', 'Nasus',
     'Senna', 'Smolder', 'Twitch', 'Vayne', 'Veigar', 'Viktor', 'Vladimir', 'Xayah', 'Zeri', 'Ryze',
   ],
+  hook: ['Blitzcrank', 'Thresh', 'Nautilus', 'Pyke', 'Morgana', 'Bard', 'Lux', 'Zyra', 'Neeko'],
+  slippery: ['Ezreal', 'Sivir', 'Kalista', 'Lucian', 'Vayne', 'Tristana', 'Samira', 'Xayah', 'Zeri', 'Corki', 'Kaisa', 'Graves', 'Nilah'],
+  immobile: ['Jhin', 'Aphelios', 'Jinx', 'Ashe', 'KogMaw', 'Varus', 'MissFortune', 'Senna', 'Caitlyn', 'Ziggs', 'Twitch', 'Swain'],
+  spellshield: ['Morgana', 'Sivir'],
   cc: [
     'Alistar', 'Amumu', 'Annie', 'Ashe', 'Blitzcrank', 'Braum', 'Galio', 'Gragas', 'JarvanIV', 'Kennen',
     'Leona', 'Lissandra', 'Malphite', 'Maokai', 'Morgana', 'Nautilus', 'Neeko', 'Nunu', 'Ornn', 'Poppy', 'Rakan',
