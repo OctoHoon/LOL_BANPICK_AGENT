@@ -138,7 +138,7 @@ export function roleShare(m) {
 
 // 우리 팀 픽 추천.
 // state: { team, actions, seq, assign }  assign: { stepIndex: memberId }
-export function recommendPicks(state, champMap, limit = 8, meta = null) {
+export function recommendPicks(state, champMap, limit = 8, meta = null, opts = {}) {
   const { team, actions, seq, assign, lineup = {}, allowSwap = true } = state;
   const ours = team.side;
   const used = usedChampions(actions);
@@ -166,7 +166,18 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
   for (const m of openMembers) {
     const share = roleShare(m);
     const planned = lineup[m.id] && !takenRoles.has(lineup[m.id]) ? lineup[m.id] : null;
-    const available = m.pool.filter((p) => !used.has(p.champ) && champMap.has(p.champ) && !takenRoles.has(p.role || m.role));
+    let available = m.pool.filter((p) => !used.has(p.champ) && champMap.has(p.champ) && !takenRoles.has(p.role || m.role));
+    if (opts.offPool) {
+      // 챔프폭 밖 후보: 이 팀원이 이번 판에 설 라인에서 상위권이 많이 쓰는 챔피언
+      const r = planned || m.role;
+      if (!meta || takenRoles.has(r)) continue;
+      const mine = new Set(m.pool.filter((p) => (p.role || m.role) === r).map((p) => p.champ));
+      available = Object.entries(meta.champs || {})
+        .filter(([id, c]) => (c.pos?.[r]?.[0] || 0) >= 30 && !mine.has(id) && !used.has(id) && champMap.has(id))
+        .sort((a, b) => b[1].pos[r][0] - a[1].pos[r][0])
+        .slice(0, 30)
+        .map(([id, c]) => ({ champ: id, role: r, offPool: c.pos[r][0] }));
+    }
     for (const p of available) {
       const role = p.role || m.role;
       const roleName = ROLES.find((r) => r.id === role)?.label ?? role;
@@ -182,8 +193,10 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
       const mainsLeft = available.filter((x) => x.tier === 1 && (x.role || m.role) === role).length;
       const c = champMap.get(p.champ);
       const reasons = [];
-      let score = TIERS[p.tier]?.score ?? 20;
-      reasons.push(`${m.name || '팀원'}의 ${roleName} ${TIERS[p.tier]?.label ?? '연습'} 챔피언`);
+      let score = p.offPool ? 0 : TIERS[p.tier]?.score ?? 20;
+      reasons.push(p.offPool
+        ? `${m.name || '팀원'}의 챔프폭 밖 (상위권 ${roleName} ${p.offPool}판)`
+        : `${m.name || '팀원'}의 ${roleName} ${TIERS[p.tier]?.label ?? '연습'} 챔피언`);
       if (swapNote) {
         score -= 8;
         reasons.push(swapNote);
@@ -230,11 +243,20 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
         reasons.push(...st.reasons);
       }
 
-      out.push({ champ: p.champ, memberId: m.id, role, score: Math.round(score), reasons });
+      out.push({ champ: p.champ, memberId: m.id, role, score: Math.round(score), reasons, offPool: !!p.offPool });
     }
   }
   out.sort((a, b) => b.score - a.score);
   return out.slice(0, limit);
+}
+
+// 챔프폭에 없지만 이번 판 상황(상성·조합)만으로 점수가 높은 챔피언. 숙련도 점수 없이 OFF_POOL_MIN 이상만.
+export const OFF_POOL_MIN = 15;
+export function recommendOffPool(state, champMap, limit = 4, meta = null) {
+  if (!meta) return [];
+  const list = recommendPicks(state, champMap, 200, meta, { offPool: true }).filter((r) => r.score >= OFF_POOL_MIN);
+  const seen = new Set();
+  return list.filter((r) => !seen.has(r.champ) && seen.add(r.champ)).slice(0, limit);
 }
 
 // ---------- 조합 규칙(data/traits.js) ----------

@@ -3,7 +3,7 @@ import { teamFromCollected } from './team-data.js';
 import { SAMPLE_TEAM } from './data/sample.js';
 import {
   assignEnemyPositions, ourAssignments, roleShare, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
-  recommendPicks, recommendBans, guessMember, matchChampion, compSummary, gamePlan,
+  recommendPicks, recommendBans, recommendOffPool, guessMember, matchChampion, compSummary, gamePlan,
 } from './logic.js';
 
 const STORE = 'banpick.state.v1';
@@ -225,6 +225,11 @@ function renderReco() {
     body = list.length
       ? `<ol class="recos">${list.map((r) => recoItem(r, 'pick')).join('')}</ol>`
       : '<p class="muted">남은 팀원 챔프폭에서 고를 수 있는 챔피언이 없습니다. 아래 목록에서 직접 고르세요.</p>';
+    const extra = recommendOffPool(st, S.champMap, 4, S.meta);
+    if (extra.length) {
+      body += `<h3 class="sub">챔프폭 밖이지만 이번 판 상황이 좋은 픽 <small>숙련도 점수 없이 상성·조합만으로 ${'15'}점 이상</small></h3>
+        <ol class="recos">${extra.map((r) => recoItem(r, 'pick')).join('')}</ol>`;
+    }
   }
   const who = ours ? '우리 팀' : '상대 팀';
   const hint = ours

@@ -176,3 +176,4 @@ details.pool-group > summary { cursor: pointer; padding: 2px 0; }
 .plan h4 { margin: 10px 0 4px; font-size: 13px; color: var(--gold); }
 .plan ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .plan li { font-size: 13px; }
+.reco-box h3.sub { margin-top: 14px; }

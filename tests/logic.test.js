@@ -297,3 +297,21 @@ test('라인을 정해 두면 그 라인 챔피언은 그 팀원 몫으로 추�
   // 아리는 m3 미드 챔프폭이지만 미드를 m1 에게 정해 두면 m1 몫으로
   assert.deepEqual(guessMember(team, 'Ahri', new Set(), new Set(), { m1: 'mid', m3: 'top' }), { id: 'm1', role: 'mid' });
 });
+
+test('챔프폭 밖이라도 상성이 아주 좋으면 따로 추천', async () => {
+  const { recommendOffPool } = await import('../logic.js');
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  actions[11] = 'Yasuo';
+  const t = structuredClone(team);
+  t.members[2].pool = t.members[2].pool.filter((p) => p.champ !== 'Ahri');
+  const meta = structuredClone(META);
+  meta.champs.Ahri.pos.mid = [300, 165];
+  meta.matchups.mid.Ahri.Yasuo = [200, 140];
+  const off = recommendOffPool({ team: t, actions, seq, assign: {} }, champMap, 4, meta);
+  const ahri = off.find((r) => r.champ === 'Ahri');
+  assert.ok(ahri && ahri.memberId === 'm3' && ahri.offPool);
+  assert.ok(ahri.reasons[0].includes('챔프폭 밖'));
+  assert.ok(off.every((r) => r.score >= 15));
+  assert.ok(!rp({ team: t, actions, seq, assign: {} }, champMap, 50, meta).some((r) => r.offPool));
+});
