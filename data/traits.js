@@ -22,6 +22,7 @@
 // windwall : 투사체를 막는 기술(바람 장막 등). projectile: 주요 피해가 투사체인 챔피언
 // ccImmune : CC 면역·해제 기술이 있는 챔피언
 // heal     : 회복량이 커서 치유 감소가 필요한 챔피언. stealth: 은신 챔피언
+// antiAA   : 방어력·공격 속도 감소로 평타 위주 AD를 크게 약하게 만드는 챔피언. aaReliant: 평타 의존이 큰 AD
 // cc       : 확실한 하드 CC(기절·속박·에어본 등)가 있는 챔피언. Riot 클라이언트 CC 등급(data/champ-attrs.json)이 있으면 그쪽을 우선한다.
 export const TRAITS = {
   dive: [
@@ -88,6 +89,8 @@ export const TRAITS = {
   ccImmune: ['Alistar', 'Gangplank', 'Milio', 'Morgana', 'Olaf', 'Sivir'],
   heal: ['Aatrox', 'Briar', 'DrMundo', 'Fiddlesticks', 'Illaoi', 'Milio', 'Nami', 'Olaf', 'Sona', 'Soraka', 'Swain', 'Sylas', 'Vladimir', 'Warwick', 'Yuumi'],
   stealth: ['Akshan', 'Evelynn', 'Khazix', 'MonkeyKing', 'Pyke', 'Rengar', 'Shaco', 'Talon', 'Twitch', 'Vayne'],
+  antiAA: ['Malphite', 'Rammus', 'Teemo'],
+  aaReliant: ['Belveth', 'Jax', 'KogMaw', 'MasterYi', 'Tryndamere', 'Twitch', 'Vayne', 'Yasuo', 'Yone', 'Kindred', 'Xayah'],
   cc: [
     'Alistar', 'Amumu', 'Annie', 'Ashe', 'Blitzcrank', 'Braum', 'Galio', 'Gragas', 'JarvanIV', 'Kennen',
     'Leona', 'Lissandra', 'Malphite', 'Maokai', 'Morgana', 'Nautilus', 'Neeko', 'Nunu', 'Ornn', 'Poppy', 'Rakan',

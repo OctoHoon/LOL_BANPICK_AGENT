@@ -366,6 +366,9 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap, ctx = {}) {
     if (is('slippery')) add(3, '상대 돌진이 많아 이동기 있는 원딜이 살아남기 쉬움');
     else if (is('immobile')) add(-3, '상대 돌진이 많은데 이동기가 없어 노려지기 쉬움');
   }
+  // 말파이트·람머스류는 평타 위주 AD를 크게 약하게 만든다
+  const anti = enemyPicks.filter((id) => hasTrait('antiAA', id));
+  if (anti.length && is('aaReliant')) add(-4, `상대 ${names(anti)}${eunNeun(names(anti))} 평타 위주 AD를 크게 약하게 만듦`);
   // 투사체 위주 상대에는 바람 장막류
   const proj = enemyPicks.filter((id) => hasTrait('projectile', id));
   if (proj.length >= 2 && is('windwall')) add(4, `상대 주요 피해가 투사체(${names(proj)})라 막는 기술 효율이 큼`);
