@@ -62,8 +62,9 @@ test('AP가 없으면 AP 챔피언 점수가 오른다', () => {
 });
 
 test('팀원 배정 추정, 초성 검색, 조합 성향', () => {
-  assert.equal(guessMember(team, 'Galio', new Set()), 'm3');
-  assert.equal(guessMember(team, 'Galio', new Set(['m3'])), 'm5');
+  assert.deepEqual(guessMember(team, 'Galio', new Set()), { id: 'm3', role: 'mid' });
+  assert.deepEqual(guessMember(team, 'Galio', new Set(['m3'])), { id: 'm5', role: 'support' });
+  assert.deepEqual(guessMember(team, 'Galio', new Set(), new Set(['mid'])), { id: 'm5', role: 'support' });
   assert.ok(matchChampion(champMap.get('Ahri'), 'ㅇㄹ'));
   assert.ok(matchChampion(champMap.get('LeeSin'), '리신'));
   assert.equal(currentStep([1, null]), 1);
@@ -131,4 +132,57 @@ test('듀오 궁합', () => {
   const st = statReasons(META, champMap, 'adc', 'Jinx', {}, 0, { support: 'Nautilus' });
   assert.ok(st.reasons.some((r) => r.includes('노틸러스와 듀오 승률 60%')));
   assert.ok(st.score > 0);
+});
+
+// ---------- 라인 유동 · 전체 전적 ----------
+import { summarizeGames, recencyWeight } from '../scripts/collect.mjs';
+import { assignRoles, poolFromCollected } from '../team-data.js';
+
+test('최근 가중치: 120일 전 경기는 절반', () => {
+  const now = Date.UTC(2026, 10, 22);
+  assert.equal(recencyWeight(now, now, 120), 1);
+  assert.ok(Math.abs(recencyWeight(now - 120 * 86400000, now, 120) - 0.5) < 1e-9);
+  const sum = summarizeGames([
+    { champ: 'Ahri', pos: 'mid', win: true, at: now },
+    { champ: 'Ahri', pos: 'mid', win: false, at: now - 240 * 86400000 },
+    { champ: 'Ahri', pos: 'top', win: true, at: now },
+  ], now, 120);
+  assert.deepEqual(sum.champs[0].pos.mid, [2, 1, 1.25, 1]);
+  assert.equal(sum.mainRole, 'mid');
+});
+
+test('주 라인 배정은 겹치지 않고 많이 간 쪽 우선', () => {
+  const roles = assignRoles([
+    { roles: { jungle: [18, 6], top: [11, 4], adc: [15, 5] } },
+    { roles: { jungle: [54, 30] } },
+    { roles: { mid: [52, 20] } },
+    { roles: { adc: [32, 9], top: [27, 12] } },
+    { roles: { support: [56, 25] } },
+  ]);
+  assert.deepEqual(roles, ['adc', 'jungle', 'mid', 'top', 'support']);
+});
+
+test('수집 챔프폭은 라인별 항목으로 만들어진다', () => {
+  const pool = poolFromCollected({
+    champs: [{ champ: 'Ahri', pos: { mid: [40, 22, 9, 5], top: [2, 1, 0.5, 0.2] } }, { champ: 'Gnar', pos: { top: [30, 15, 1, 0.5] } }],
+    mastery: [],
+  }, champMap, null, 'mid');
+  const ahriMid = pool.find((p) => p.champ === 'Ahri' && p.role === 'mid');
+  const gnarTop = pool.find((p) => p.champ === 'Gnar' && p.role === 'top');
+  assert.equal(ahriMid.tier, 1); // 9 + 4
+  assert.equal(gnarTop.tier, 2); // 1 + 3: 오래전에 많이 한 챔피언은 한 단계 낮게
+  assert.ok(!pool.some((p) => p.champ === 'Ahri' && p.role === 'top')); // 0.5 + 0.2 < 1
+});
+
+test('미드가 이미 찼으면 같은 팀원의 다른 라인 챔프폭으로 추천', () => {
+  const t = structuredClone(team);
+  t.members[2].pool.push({ champ: 'Gnar', role: 'top', tier: 1 });
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  actions[10] = 'Ornn';
+  const recs = rp({ team: t, actions, seq, assign: { 10: 'm1' }, assignRole: { 10: 'mid' } }, champMap, 50);
+  assert.ok(recs.every((r) => r.role !== 'mid'));
+  const gnar = recs.find((r) => r.champ === 'Gnar' && r.memberId === 'm3');
+  assert.equal(gnar.role, 'top');
+  assert.ok(gnar.reasons.some((x) => x.startsWith('부 라인')));
 });

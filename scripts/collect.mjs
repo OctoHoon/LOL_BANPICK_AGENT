@@ -88,9 +88,47 @@ async function writeJson(file, data, pretty = false) {
 }
 
 // ---------- 팀원 ----------
+// 최근 경기에 더 큰 비중을 주는 가중치. halfLifeDays 일 전 경기는 절반, 그 두 배 전은 1/4.
+export function recencyWeight(at, now, halfLifeDays) {
+  const days = Math.max(0, (now - at) / 86400000);
+  return Math.pow(0.5, days / halfLifeDays);
+}
+
+// 경기 기록 → 챔피언·라인별 판수, 승수, 최근 가중 판수, 최근 가중 승수, 마지막 플레이 시각
+export function summarizeGames(games, now, halfLifeDays) {
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const byChamp = new Map();
+  const roles = {};
+  for (const g of games) {
+    const w = recencyWeight(g.at, now, halfLifeDays);
+    const c = byChamp.get(g.champ) || { champ: g.champ, games: 0, wins: 0, wg: 0, ww: 0, last: 0, pos: {} };
+    c.games += 1; c.wg += w; if (g.win) { c.wins += 1; c.ww += w; }
+    c.last = Math.max(c.last, g.at || 0);
+    if (g.pos) {
+      const v = c.pos[g.pos] || (c.pos[g.pos] = [0, 0, 0, 0]);
+      v[0] += 1; v[2] += w; if (g.win) { v[1] += 1; v[3] += w; }
+      const rv = roles[g.pos] || (roles[g.pos] = [0, 0]);
+      rv[0] += 1; rv[1] += w;
+    }
+    byChamp.set(g.champ, c);
+  }
+  const champs = [...byChamp.values()].map((c) => ({
+    ...c, wg: r2(c.wg), ww: r2(c.ww),
+    pos: Object.fromEntries(Object.entries(c.pos).map(([k, v]) => [k, [v[0], v[1], r2(v[2]), r2(v[3])]])),
+  })).sort((a, b) => b.wg - a.wg || b.games - a.games);
+  for (const k of Object.keys(roles)) roles[k] = [roles[k][0], r2(roles[k][1])];
+  const mainRole = Object.entries(roles).sort((a, b) => b[1][1] - a[1][1])[0]?.[0] || null;
+  return { champs, roles, mainRole };
+}
+
+const byNewest = (a, b) => Number(b.split('_')[1]) - Number(a.split('_')[1]);
+
 export async function collectMembers(api, cfg) {
   const cache = await readJson('data/raw/member-matches.json', {});
-  const out = [];
+  const halfLife = cfg.halfLifeDays || 120;
+  const maxPerMember = cfg.memberMaxMatches || 5000;
+  let budget = cfg.memberNewMatchesPerRun || 2500; // 한 번 실행에 새로 받을 경기 수 상한. 남은 건 다음 실행이 이어 받는다.
+
   // 계정을 먼저 모두 찾아야 "팀원끼리 같은 팀이었는지"를 경기마다 바로 셀 수 있다
   const accounts = [];
   for (const m of cfg.members) {
@@ -98,81 +136,87 @@ export async function collectMembers(api, cfg) {
     accounts.push(await api.get('regional', `/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`));
   }
   const memberPuuids = new Set(accounts.filter(Boolean).map((a) => a.puuid));
+
+  // 1) 경기 목록: 랭크 전체 기록을 100개씩 끝까지 받는다
+  const idLists = [];
+  for (const [mi, m] of cfg.members.entries()) {
+    const acc = accounts[mi];
+    if (!acc) { idLists.push(null); continue; }
+    const ids = new Set();
+    for (const q of cfg.memberQueues || [440, 420]) {
+      for (let start = 0; start < maxPerMember; start += 100) {
+        const list = (await api.get('regional', `/lol/match/v5/matches/by-puuid/${acc.puuid}/ids?queue=${q}&start=${start}&count=100`)) || [];
+        list.forEach((id) => ids.add(id));
+        if (list.length < 100) break;
+      }
+    }
+    idLists.push([...ids].sort(byNewest).slice(0, maxPerMember));
+    log(`팀원 ${m.riotId}: 랭크 경기 ${ids.size}판 확인`);
+  }
+
+  // 2) 아직 안 받은 경기를 팀원별로 번갈아, 최근 경기부터 받는다
+  const queues = idLists.map((ids, mi) => (ids ? ids.filter((id) => !cache[`${accounts[mi].puuid}:${id}`]) : []));
+  let fetched = 0;
+  for (let round = 0; budget > 0 && queues.some((q) => q.length); round += 1) {
+    for (const [mi, q] of queues.entries()) {
+      if (!q.length || budget <= 0) continue;
+      const id = q.shift();
+      const puuid = accounts[mi].puuid;
+      const key = `${puuid}:${id}`;
+      const match = await api.get('regional', `/lol/match/v5/matches/${id}`);
+      budget -= 1; fetched += 1;
+      if (!match) continue;
+      const me = match.info.participants.find((p) => p.puuid === puuid);
+      if (!me || match.info.gameDuration < 300) { cache[key] = { skip: true }; continue; }
+      cache[key] = {
+        champ: champId(me.championName), pos: POS[me.teamPosition] || null, win: me.win,
+        queue: match.info.queueId, at: match.info.gameStartTimestamp,
+        // 공개 저장소에 남는 파일이라 다른 사람의 식별자는 저장하지 않고 팀원 수만 센다
+        withMembers: match.info.participants.filter((p) => p.teamId === me.teamId && p.puuid !== puuid && memberPuuids.has(p.puuid)).length,
+      };
+      if (fetched % 200 === 0) {
+        log(`경기 ${fetched}판 받음, 남은 경기 ${queues.reduce((a, x) => a + x.length, 0)}판`);
+        await writeJson('data/raw/member-matches.json', cache); // 중간에 끊겨도 받은 만큼은 남긴다
+      }
+    }
+  }
+
+  // 3) 숙련도(전체 챔피언) 와 요약
+  const now = Date.now();
+  const out = [];
   for (const [mi, m] of cfg.members.entries()) {
     const acc = accounts[mi];
     if (!acc) { log(`계정을 찾지 못함: ${m.riotId}`); out.push({ riotId: m.riotId, error: 'not_found' }); continue; }
-    const puuid = acc.puuid;
-    const mastery = (await api.get('platform', `/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=15`)) || [];
-
-    const ids = new Set();
-    const want = cfg.memberMatchCount || 60;
-    for (const q of cfg.memberQueues || [440, 420]) {
-      // 한 번에 최대 100개라 나눠서 받는다
-      for (let start = 0; start < want; start += 100) {
-        const count = Math.min(100, want - start);
-        const list = (await api.get('regional', `/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=${q}&start=${start}&count=${count}`)) || [];
-        list.forEach((id) => ids.add(id));
-        if (list.length < count) break;
-      }
-    }
-    // match id 는 서버 접두사 + 증가 번호라서 번호 기준으로 최근 순 정렬
-    const recent = [...ids].sort((a, b) => Number(b.split('_')[1]) - Number(a.split('_')[1])).slice(0, cfg.memberMatchCount || 60);
-
+    const mastery = (await api.get('platform', `/lol/champion-mastery/v4/champion-masteries/by-puuid/${acc.puuid}`)) || [];
     const games = [];
-    for (const id of recent) {
-      const key = `${puuid}:${id}`;
-      if (!cache[key]) {
-        const match = await api.get('regional', `/lol/match/v5/matches/${id}`);
-        if (!match) continue;
-        const me = match.info.participants.find((p) => p.puuid === puuid);
-        if (!me || match.info.gameDuration < 300) { cache[key] = { skip: true }; continue; }
-        cache[key] = {
-          champ: champId(me.championName), pos: POS[me.teamPosition] || null, win: me.win,
-          queue: match.info.queueId, at: match.info.gameStartTimestamp,
-          // 공개 저장소에 남는 파일이라 다른 사람의 식별자는 저장하지 않고 팀원 수만 센다
-          withMembers: match.info.participants.filter((p) => p.teamId === me.teamId && p.puuid !== puuid && memberPuuids.has(p.puuid)).length,
-        };
-      }
-      if (cache[key].mates) { // 이전 형식 정리
-        cache[key].withMembers = cache[key].mates.filter((x) => memberPuuids.has(x)).length;
-        delete cache[key].mates;
-      }
-      if (!cache[key].skip) games.push(cache[key]);
+    for (const id of idLists[mi]) {
+      const key = `${acc.puuid}:${id}`;
+      const g = cache[key];
+      if (!g) continue;
+      if (g.mates) { g.withMembers = g.mates.filter((x) => memberPuuids.has(x)).length; delete g.mates; } // 이전 형식 정리
+      if (!g.skip) games.push(g);
     }
-
-    const byChamp = new Map();
-    const roles = {};
-    for (const g of games) {
-      const c = byChamp.get(g.champ) || { champ: g.champ, games: 0, wins: 0, pos: {} };
-      c.games += 1; if (g.win) c.wins += 1;
-      if (g.pos) { const v = c.pos[g.pos] || (c.pos[g.pos] = [0, 0]); v[0] += 1; if (g.win) v[1] += 1; }
-      byChamp.set(g.champ, c);
-      if (g.pos) roles[g.pos] = (roles[g.pos] || 0) + 1;
-    }
-    const mainRole = Object.entries(roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    const sum = summarizeGames(games, now, halfLife);
     out.push({
       riotId: `${acc.gameName}#${acc.tagLine}`,
-      puuid,
-      mainRole,
-      roles,
+      mainRole: sum.mainRole,
+      roles: sum.roles,
       games: games.length,
-      champs: [...byChamp.values()].sort((a, b) => b.games - a.games),
-      mastery: mastery.map((x) => ({ championId: x.championId, points: x.championPoints, level: x.championLevel })),
-      recent: games,
+      totalMatches: idLists[mi].length,
+      complete: queues[mi].length === 0,
+      withTeam: games.filter((g) => g.withMembers > 0).length,
+      firstGameAt: games.reduce((a, g) => Math.min(a, g.at || a), now),
+      champs: sum.champs,
+      mastery: mastery
+        .filter((x) => x.championPoints >= 10000)
+        .map((x) => ({ championId: x.championId, points: x.championPoints, level: x.championLevel, last: x.lastPlayTime })),
     });
-    log(`팀원 ${m.riotId}: 경기 ${games.length}판, 주 포지션 ${mainRole}`);
+    log(`팀원 ${m.riotId}: 분석 ${games.length}/${idLists[mi].length}판, 주 라인 ${sum.mainRole}`);
   }
-
-  // 팀원끼리 같은 팀으로 뛴 경기(자유 랭크 함께 한 판) 집계
-  for (const m of out) {
-    if (!m.recent) continue;
-    m.withTeam = m.recent.filter((g) => g.withMembers > 0).length;
-  }
-  const publicOut = out.map(({ recent, puuid, ...rest }) => rest); // puuid·경기 목록은 공개 파일에 넣지 않는다
 
   await writeJson('data/raw/member-matches.json', cache);
-  await writeJson('data/team.json', { updatedAt: new Date().toISOString(), members: publicOut }, true);
-  return publicOut;
+  await writeJson('data/team.json', { updatedAt: new Date().toISOString(), halfLifeDays: halfLife, members: out }, true);
+  return out;
 }
 
 // ---------- 메타 ----------

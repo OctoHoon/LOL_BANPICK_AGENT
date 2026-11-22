@@ -51,7 +51,7 @@ test('수집기 전체 실행 (가짜 Riot 서버)', async () => {
     let m;
     if ((m = u.pathname.match(/by-riot-id\/([^/]+)\/([^/]+)$/))) {
       const name = decodeURIComponent(m[1]);
-      const i = ['ヨイショト', '야리야', 'Nica', '신동우', '민트초코스무디'].indexOf(name);
+      const i = ['요이쇼또', '야리야', 'Nica', '신동우', '민트초코스무디'].indexOf(name);
       return i < 0 ? send({}, 404) : send({ puuid: members[i], gameName: name, tagLine: decodeURIComponent(m[2]) });
     }
     if (u.pathname.includes('champion-masteries')) return send([{ championId: 103, championPoints: 120000, championLevel: 30 }]);
@@ -82,7 +82,8 @@ test('수집기 전체 실행 (가짜 Riot 서버)', async () => {
     assert.equal(team.members[2].champs[0].champ, 'Ahri');
     assert.ok(team.members[0].withTeam > 0);
     assert.ok(!('puuid' in team.members[0]));
-    assert.deepEqual(team.members[2].champs[0].pos, { mid: [6, 3] });
+    assert.deepEqual(team.members[2].champs[0].pos.mid.slice(0, 2), [6, 3]);
+    assert.equal(team.members[2].complete, true);
     const raw = await fs.readFile(path.join(dir, 'data/raw/member-matches.json'), 'utf8');
     assert.ok(!raw.includes('p1') && !raw.includes('mates'));
     const meta = JSON.parse(await fs.readFile(path.join(dir, 'data/meta.json'), 'utf8'));

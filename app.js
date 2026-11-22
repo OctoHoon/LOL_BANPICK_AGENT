@@ -2,7 +2,7 @@ import { loadChampions } from './champions-loader.js';
 import { teamFromCollected } from './team-data.js';
 import { SAMPLE_TEAM } from './data/sample.js';
 import {
-  assignEnemyPositions, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
+  assignEnemyPositions, ourAssignments, roleShare, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
   recommendPicks, recommendBans, guessMember, matchChampion,
 } from './logic.js';
 
@@ -14,14 +14,14 @@ const roleLabel = (id) => ROLES.find((r) => r.id === id)?.label ?? '';
 
 const S = {
   champs: [], champMap: new Map(), source: '', meta: null, collected: null, fresh: false,
-  team: null, actions: [], assign: {},
+  team: null, actions: [], assign: {}, assignRole: {},
   tab: 'draft', search: '', tag: '', poolOnly: false, toast: '',
 };
 
 // ---------- 저장 ----------
 function seq() { return draftSequence(S.team.format); }
 function save() {
-  try { localStorage.setItem(STORE, JSON.stringify({ team: S.team, actions: S.actions, assign: S.assign, tab: S.tab })); } catch { /* 무시 */ }
+  try { localStorage.setItem(STORE, JSON.stringify({ team: S.team, actions: S.actions, assign: S.assign, assignRole: S.assignRole, tab: S.tab })); } catch { /* 무시 */ }
 }
 function b64encode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj));
@@ -50,6 +50,7 @@ function restore() {
       S.team = normalizeTeam(saved.team);
       S.actions = saved.actions?.length === seq().length ? saved.actions : Array(seq().length).fill(null);
       S.assign = saved.assign || {};
+      S.assignRole = saved.assignRole || {};
       S.tab = saved.tab || 'draft';
       return;
     }
@@ -67,7 +68,10 @@ function normalizeTeam(t) {
     team.members.push({
       id: m.id || `m${i + 1}`, name: m.name || '', riotId: m.riotId || '',
       role: m.role || ROLES[i].id, pool: m.pool || [], hates: m.hates || [],
+      ...(m.collected ? { collected: m.collected } : {}),
     });
+    const mm = team.members[i];
+    for (const p of mm.pool) if (!p.role) p.role = mm.role; // 예전 형식: 라인 없는 항목은 주 라인으로
   }
   return team;
 }
@@ -133,7 +137,9 @@ function renderSide(side) {
   const bans = sideChampions(S.actions, seq(), side, 'ban');
   const picks = sideChampions(S.actions, seq(), side, 'pick');
   const cur = currentStep(S.actions);
-  const filled = new Set(Object.entries(S.assign).filter(([i]) => S.actions[i]).map(([, m]) => m));
+  const asg = ours ? ourAssignments({ team: S.team, actions: S.actions, seq: seq(), assign: S.assign, assignRole: S.assignRole }) : [];
+  const filled = new Set(asg.map((a) => a.memberId));
+  const takenRoles = new Set(asg.map((a) => a.role));
   const prof = teamProfile(picks.filter((p) => p.champ).map((p) => p.champ), S.champMap);
   const total = prof.ad + prof.ap || 1;
   const enemyPos = !ours && S.meta ? assignEnemyPositions(S.meta, picks.filter((p) => p.champ).map((p) => p.champ)) : {};
@@ -149,6 +155,7 @@ function renderSide(side) {
     <ol class="picks">${picks.map((p) => {
       const mid = S.assign[p.i];
       const member = S.team.members.find((m) => m.id === mid);
+      const role = asg.find((a) => a.i === p.i)?.role;
       return `
       <li class="slot pick ${p.i === cur ? 'now' : ''}">
         <button class="pickbtn" data-slot="${p.i}" title="${p.champ ? '눌러서 비우기' : stepLabel(p.i)}">
@@ -156,10 +163,15 @@ function renderSide(side) {
           <span class="pick-name">${p.champ ? esc(champName(p.champ)) : `<em>${stepLabel(p.i)}</em>`}${enemyPos[p.champ] ? `<small class="guess" title="상위권 통계로 추정한 포지션">${esc(roleLabel(enemyPos[p.champ]))}?</small>` : ''}</span>
         </button>
         ${ours && p.champ ? `
-        <select class="assign" data-assign="${p.i}" aria-label="담당 팀원">
-          ${S.team.members.map((m) => `<option value="${m.id}" ${m.id === mid ? 'selected' : ''} ${filled.has(m.id) && m.id !== mid ? 'disabled' : ''}>${esc(roleLabel(m.role))} · ${esc(m.name || '이름 없음')}</option>`).join('')}
-        </select>` : ''}
-        ${ours && p.champ && member && !member.pool.some((x) => x.champ === p.champ) ? '<span class="warn">챔프폭 밖</span>' : ''}
+        <div class="assign-row">
+          <select class="assign" data-assign="${p.i}" aria-label="담당 팀원">
+            ${S.team.members.map((m) => `<option value="${m.id}" ${m.id === mid ? 'selected' : ''} ${filled.has(m.id) && m.id !== mid ? 'disabled' : ''}>${esc(m.name || '이름 없음')}</option>`).join('')}
+          </select>
+          <select class="assign role" data-assign-role="${p.i}" aria-label="라인">
+            ${ROLES.map((r) => `<option value="${r.id}" ${r.id === role ? 'selected' : ''} ${takenRoles.has(r.id) && r.id !== role ? 'disabled' : ''}>${r.label}</option>`).join('')}
+          </select>
+        </div>` : ''}
+        ${ours && p.champ && member && !member.pool.some((x) => x.champ === p.champ && x.role === role) ? `<span class="warn">${member.pool.some((x) => x.champ === p.champ) ? '다른 라인 챔프폭' : '챔프폭 밖'}</span>` : ''}
       </li>`;
     }).join('')}</ol>
     <div class="profile" title="Data Dragon 태그와 수동 분류 기반 추정">
@@ -173,11 +185,11 @@ function recoItem(r, kind) {
   const m = S.team.members.find((x) => x.id === r.memberId);
   return `
   <li>
-    <button class="reco" data-reco="${esc(r.champ)}" ${r.memberId ? `data-member="${r.memberId}"` : ''}>
+    <button class="reco" data-reco="${esc(r.champ)}" ${r.memberId ? `data-member="${r.memberId}" data-role="${r.role}"` : ''}>
       ${portrait(r.champ)}
       <span class="reco-body">
         <span class="reco-head"><b>${esc(champName(r.champ))}</b>
-          ${kind === 'pick' && m ? `<span class="tag">${esc(roleLabel(m.role))} · ${esc(m.name || '팀원')}</span>` : ''}
+          ${kind === 'pick' && m ? `<span class="tag">${esc(roleLabel(r.role))} · ${esc(m.name || '팀원')}</span>` : ''}
           <span class="score">${r.score}점</span></span>
         <span class="reasons">${r.reasons.map(esc).join(' · ')}</span>
       </span>
@@ -192,7 +204,7 @@ function renderReco() {
   }
   const s = seq()[cur];
   const ours = s.side === S.team.side;
-  const st = { team: S.team, actions: S.actions, seq: seq(), assign: S.assign };
+  const st = { team: S.team, actions: S.actions, seq: seq(), assign: S.assign, assignRole: S.assignRole };
   let body = '';
   if (s.type === 'ban') {
     const { list, skipped } = recommendBans(st, S.champMap, 8, S.meta);
@@ -250,14 +262,21 @@ function renderDraft() {
   renderGrid();
 }
 
-function fillSlot(champ, memberId) {
+function fillSlot(champ, memberId, role) {
   const cur = currentStep(S.actions);
   if (cur == null || S.actions.includes(champ)) return;
   const s = seq()[cur];
   S.actions[cur] = champ;
   if (s.type === 'pick' && s.side === S.team.side) {
-    const filled = new Set(Object.entries(S.assign).filter(([i]) => S.actions[i] && Number(i) !== cur).map(([, m]) => m));
-    S.assign[cur] = memberId && !filled.has(memberId) ? memberId : guessMember(S.team, champ, filled);
+    const asg = ourAssignments({ team: S.team, actions: S.actions, seq: seq(), assign: S.assign, assignRole: S.assignRole }).filter((a) => a.i !== cur);
+    const filled = new Set(asg.map((a) => a.memberId));
+    const taken = new Set(asg.map((a) => a.role));
+    if (memberId && role && !filled.has(memberId) && !taken.has(role)) {
+      S.assign[cur] = memberId; S.assignRole[cur] = role;
+    } else {
+      const g = guessMember(S.team, champ, filled, taken);
+      if (g) { S.assign[cur] = g.id; S.assignRole[cur] = g.role; }
+    }
   }
   save(); renderDraft();
 }
@@ -267,29 +286,61 @@ function datalist() {
   return `<datalist id="champ-names">${S.champs.map((c) => `<option value="${esc(c.name)}"></option>`).join('')}</datalist>`;
 }
 
+function poolRow(p, pi) {
+  const rec = p.games ? `${p.wins ?? 0}/${p.games}` : '';
+  const title = p.wg != null
+    ? `전체 ${p.games}판 ${p.wins}승, 최근 가중 ${p.wg}판 ${p.ww}승 (예: 14/24 형식으로 고칠 수 있음)`
+    : p.mastery ? `랭크 기록 없음, 숙련도 ${p.mastery.toLocaleString('ko-KR')}점` : '전적, 예: 14/24 (5판 이상부터 반영)';
+  return `
+      <li>
+        ${portrait(p.champ, 'sm')}
+        <span class="pname">${esc(champName(p.champ))}</span>
+        <select data-pool="${pi}" data-pf="tier" aria-label="숙련도">${[1, 2, 3].map((t) => `<option value="${t}" ${p.tier === t ? 'selected' : ''}>${TIERS[t].label}</option>`).join('')}</select>
+        <input class="num" data-pool="${pi}" data-pf="record" value="${rec}" placeholder="승/판" inputmode="numeric" aria-label="전적 (승/판)" title="${esc(title)}">
+        <button class="x" data-del-pool="${pi}" aria-label="삭제">×</button>
+      </li>`;
+}
+
+// 주 라인을 먼저, 나머지 라인은 비중 순으로 접어서 보여 준다
+function poolGroups(m) {
+  if (!m.pool.length) return '<p class="muted small">아직 없습니다.</p>';
+  const share = roleShare(m);
+  const roles = [...new Set(m.pool.map((p) => p.role))].sort((a, b) => (a === m.role ? -1 : b === m.role ? 1 : (share[b] || 0) - (share[a] || 0)));
+  return roles.map((role) => {
+    const rows = m.pool.map((p, pi) => ({ p, pi })).filter(({ p }) => p.role === role);
+    const head = `${esc(roleLabel(role))} <small>${rows.length}개${share[role] ? ` · 비중 ${Math.round(share[role] * 100)}%` : ''}${role === m.role ? ' · 주 라인' : ''}</small>`;
+    const list = `<ul class="pool">${rows.map(({ p, pi }) => poolRow(p, pi)).join('')}</ul>`;
+    return role === m.role
+      ? `<div class="pool-group"><div class="pool-head">${head}</div>${list}</div>`
+      : `<details class="pool-group"><summary class="pool-head">${head}</summary>${list}</details>`;
+  }).join('');
+}
+
+function collectedLine(m) {
+  const c = m.collected;
+  if (!c) return '';
+  const part = c.complete === false ? ` (전체 ${c.total}판 중 ${c.games}판까지 분석, 나머지는 이어서 수집)` : '';
+  return `<p class="muted small">랭크 ${c.games}판 분석${part} · 팀원과 함께 ${c.withTeam}판</p>`;
+}
+
 function renderMember(m, idx) {
   return `
   <article class="member" data-m="${idx}">
     <div class="member-head">
-      <select data-f="role" aria-label="라인">${ROLES.map((r) => `<option value="${r.id}" ${m.role === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}</select>
+      <select data-f="role" aria-label="주 라인" title="주 라인">${ROLES.map((r) => `<option value="${r.id}" ${m.role === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}</select>
       <input data-f="name" value="${esc(m.name)}" placeholder="팀원 이름" aria-label="팀원 이름">
     </div>
     <div class="riot">
       <input data-f="riotId" value="${esc(m.riotId)}" placeholder="이름#태그" aria-label="Riot ID">
       <button class="ghost" data-act="import">숙련도 가져오기</button>
     </div>
-    <h4>챔프폭</h4>
-    <ul class="pool">
-      ${m.pool.map((p, pi) => `
-      <li>
-        ${portrait(p.champ, 'sm')}
-        <span class="pname">${esc(champName(p.champ))}</span>
-        <select data-pool="${pi}" data-pf="tier" aria-label="숙련도">${[1, 2, 3].map((t) => `<option value="${t}" ${p.tier === t ? 'selected' : ''}>${TIERS[t].label}</option>`).join('')}</select>
-        <input class="num" data-pool="${pi}" data-pf="record" value="${p.games ? `${p.wins ?? 0}/${p.games}` : ''}" placeholder="승/판" inputmode="numeric" aria-label="최근 전적 (승/판)" title="최근 전적, 예: 14/24 (5판 이상부터 반영)">
-        <button class="x" data-del-pool="${pi}" aria-label="삭제">×</button>
-      </li>`).join('') || '<li class="muted">아직 없습니다.</li>'}
-    </ul>
-    <input class="add" data-add="pool" list="champ-names" placeholder="+ 챔피언 추가">
+    ${collectedLine(m)}
+    <h4>챔프폭 <small>라인별</small></h4>
+    ${poolGroups(m)}
+    <div class="add-row">
+      <select data-addrole aria-label="추가할 라인">${ROLES.map((r) => `<option value="${r.id}" ${m.role === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}</select>
+      <input class="add" data-add="pool" list="champ-names" placeholder="+ 챔피언 추가">
+    </div>
     <h4>상대하기 싫은 챔피언 <small>밴 추천에 반영</small></h4>
     <div class="chips">${(m.hates || []).map((h, hi) => `<span class="chip">${esc(champName(h))}<button class="x" data-del-hate="${hi}" aria-label="삭제">×</button></span>`).join('')}</div>
     <input class="add" data-add="hate" list="champ-names" placeholder="+ 챔피언 추가">
@@ -298,7 +349,7 @@ function renderMember(m, idx) {
 
 function teamNotice() {
   if (S.team.collectedAt) {
-    return `<p class="notice ok">챔프폭은 ${esc(new Date(S.team.collectedAt).toLocaleString('ko-KR'))}에 수집한 최근 랭크 전적에서 채웠습니다. 주력·가능·연습은 판수로 임시 판정한 것이니 고쳐 쓰세요.</p>`;
+    return `<p class="notice ok">챔프폭은 ${esc(new Date(S.team.collectedAt).toLocaleString('ko-KR'))}에 수집한 랭크 전체 전적에서 라인별로 채웠습니다. 최근 경기일수록 크게 반영하고(120일마다 절반), 주력·가능·연습은 그 점수로 임시 판정한 것이니 고쳐 쓰세요.</p>`;
   }
   if (S.team.example) {
     return '<p class="notice">아직 Riot API로 전적을 수집하지 않아 멤버 Riot ID만 실제이고, 라인과 챔프폭은 임시 예시입니다. 수집기를 한 번 돌리면 실제 전적으로 바뀝니다.</p>';
@@ -379,18 +430,19 @@ function bind() {
     if (t.dataset.champ) { fillSlot(t.dataset.champ); return; }
     if (t.dataset.reco) {
       const cur = currentStep(S.actions);
-      fillSlot(t.dataset.reco, cur != null && seq()[cur].side === S.team.side ? t.dataset.member : null);
+      const ourTurn = cur != null && seq()[cur].side === S.team.side;
+      fillSlot(t.dataset.reco, ourTurn ? t.dataset.member : null, ourTurn ? t.dataset.role : null);
       return;
     }
     if (t.dataset.slot != null && S.actions[t.dataset.slot]) {
-      S.actions[t.dataset.slot] = null; delete S.assign[t.dataset.slot]; save(); renderDraft(); return;
+      S.actions[t.dataset.slot] = null; delete S.assign[t.dataset.slot]; delete S.assignRole[t.dataset.slot]; save(); renderDraft(); return;
     }
     if (t.id === 'undo') {
       const last = S.actions.map((a, i) => (a ? i : -1)).filter((i) => i >= 0).pop();
-      if (last != null) { S.actions[last] = null; delete S.assign[last]; save(); renderDraft(); }
+      if (last != null) { S.actions[last] = null; delete S.assign[last]; delete S.assignRole[last]; save(); renderDraft(); }
       return;
     }
-    if (t.id === 'resetDraft') { S.actions = Array(seq().length).fill(null); S.assign = {}; save(); renderDraft(); return; }
+    if (t.id === 'resetDraft') { S.actions = Array(seq().length).fill(null); S.assign = {}; S.assignRole = {}; save(); renderDraft(); return; }
 
     // 팀 화면
     const card = t.closest('[data-m]');
@@ -404,10 +456,10 @@ function bind() {
       toast('수집한 최근 랭크 전적으로 챔프폭을 채웠습니다. 주력·가능·연습은 판수로 임시 판정했습니다.');
       return;
     }
-    if (t.id === 'loadSample') { S.team = clone(SAMPLE_TEAM); S.actions = Array(seq().length).fill(null); S.assign = {}; save(); render(); return; }
+    if (t.id === 'loadSample') { S.team = clone(SAMPLE_TEAM); S.actions = Array(seq().length).fill(null); S.assign = {}; S.assignRole = {}; save(); render(); return; }
     if (t.id === 'clearTeam') {
       S.team = normalizeTeam({ side: S.team.side, format: S.team.format, threats: [] });
-      S.actions = Array(seq().length).fill(null); S.assign = {}; save(); render();
+      S.actions = Array(seq().length).fill(null); S.assign = {}; S.assignRole = {}; save(); render();
     }
   });
 
@@ -415,12 +467,13 @@ function bind() {
     const t = e.target;
     if (t.id === 'side' || t.id === 'format') {
       S.team[t.id] = t.value;
-      S.actions = Array(seq().length).fill(null); S.assign = {};
+      S.actions = Array(seq().length).fill(null); S.assign = {}; S.assignRole = {};
       save(); render(); return;
     }
     if (t.id === 'tag') { S.tag = t.value; renderGrid(); return; }
     if (t.id === 'poolOnly') { S.poolOnly = t.checked; renderGrid(); return; }
     if (t.dataset.assign != null) { S.assign[t.dataset.assign] = t.value; save(); renderDraft(); return; }
+    if (t.dataset.assignRole != null) { S.assignRole[t.dataset.assignRole] = t.value; save(); renderDraft(); return; }
     const card = t.closest('[data-m]');
     const m = card ? S.team.members[card.dataset.m] : null;
     if (!m) return;
@@ -428,7 +481,7 @@ function bind() {
     if (t.dataset.pool != null) {
       const p = m.pool[t.dataset.pool];
       const r = t.value.match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
-      if (r && Number(r[1]) <= Number(r[2])) { p.wins = Number(r[1]); p.games = Number(r[2]); }
+      if (r && Number(r[1]) <= Number(r[2])) { p.wins = Number(r[1]); p.games = Number(r[2]); delete p.wg; delete p.ww; }
       else {
         delete p.wins; delete p.games;
         if (t.value.trim()) toast('전적은 승/판 형식으로 적어 주세요. 예: 14/24');
@@ -466,7 +519,8 @@ function addFromInput(t) {
     const card = t.closest('[data-m]');
     const m = card ? S.team.members[card.dataset.m] : null;
     const kind = t.dataset.add;
-    if (kind === 'pool' && m && !m.pool.some((p) => p.champ === id)) m.pool.push({ champ: id, tier: 2 });
+    const role = t.parentElement.querySelector('[data-addrole]')?.value || m?.role;
+    if (kind === 'pool' && m && !m.pool.some((p) => p.champ === id && p.role === role)) m.pool.push({ champ: id, role, tier: 2 });
     if (kind === 'hate' && m && !m.hates.includes(id)) m.hates.push(id);
     if (kind === 'threat' && !S.team.threats.includes(id)) S.team.threats.push(id);
     save(); renderTeam();
@@ -489,7 +543,9 @@ async function main() {
   const [meta, collected] = await Promise.all([loadJson('data/meta.json'), loadJson('data/team.json')]);
   S.meta = meta?.games ? meta : null;
   S.collected = collected?.members?.length ? collected : null;
-  if (S.fresh && S.collected) { S.team = teamFromCollected(S.collected, S.champMap, S.team, S.meta); save(); }
+  // 처음 열었거나, 수집 데이터로 만든 팀인데 더 새 수집 결과가 있으면 다시 채운다(상대하기 싫은 챔피언·경계 목록은 유지)
+  const newer = S.collected && S.team.collectedAt && S.collected.updatedAt > S.team.collectedAt;
+  if (S.collected && (S.fresh || newer)) { S.team = teamFromCollected(S.collected, S.champMap, S.team, S.meta); save(); }
   render();
   if (S.toast) toast(S.toast);
 }
