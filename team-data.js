@@ -34,7 +34,10 @@ export function assignRoles(members) {
   return out;
 }
 
-const PER_ROLE = 10;
+// 라인별 최대 개수. 3판 이상 했거나 숙련 점수 1 이상이면 넣는다.
+const PER_ROLE = 30;
+// 챔프폭 만드는 규칙이 바뀌면 올린다. 앱이 저장된 팀을 수집 데이터로 다시 만든다.
+export const POOL_VERSION = 2;
 
 export function poolFromCollected(m, champMap, meta, mainRole) {
   const keyToId = new Map();
@@ -45,7 +48,7 @@ export function poolFromCollected(m, champMap, meta, mainRole) {
     for (const [role, v] of Object.entries(c.pos || {})) {
       const [g, w, wg = g, ww = w] = v;
       const score = comfort(g, wg);
-      if (score < 1) continue;
+      if (score < 1 && g < 3) continue;
       (byRole[role] ||= []).push({ champ: c.champ, role, tier: tierFromComfort(score), games: g, wins: w, wg, ww, score });
     }
   }
@@ -89,5 +92,6 @@ export function teamFromCollected(collected, champMap, base, meta = null) {
     threats: base?.example ? [] : (base?.threats || []),
     members,
     collectedAt: collected.updatedAt,
+    poolVersion: POOL_VERSION,
   };
 }

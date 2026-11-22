@@ -1,5 +1,5 @@
 import { loadChampions } from './champions-loader.js';
-import { teamFromCollected } from './team-data.js';
+import { teamFromCollected, POOL_VERSION } from './team-data.js';
 import { SAMPLE_TEAM } from './data/sample.js';
 import {
   assignEnemyPositions, ourAssignments, roleShare, ROLES, TIERS, draftSequence, currentStep, sideChampions, teamProfile,
@@ -65,6 +65,7 @@ function normalizeTeam(t) {
   const team = { side: t.side === 'red' ? 'red' : 'blue', format: t.format === 'tournament' ? 'tournament' : 'ranked', threats: t.threats || [], members: [] };
   if (t.example) team.example = true;
   if (t.collectedAt) team.collectedAt = t.collectedAt;
+  if (t.poolVersion) team.poolVersion = t.poolVersion;
   for (let i = 0; i < 5; i += 1) {
     const m = t.members?.[i] || {};
     team.members.push({
@@ -340,7 +341,10 @@ function poolGroups(m) {
   return roles.map((role) => {
     const rows = m.pool.map((p, pi) => ({ p, pi })).filter(({ p }) => p.role === role);
     const head = `${esc(roleLabel(role))} <small>${rows.length}개${share[role] ? ` · 비중 ${Math.round(share[role] * 100)}%` : ''}${role === m.role ? ' · 주 라인' : ''}</small>`;
-    const list = `<ul class="pool">${rows.map(({ p, pi }) => poolRow(p, pi)).join('')}</ul>`;
+    // 연습 단계는 많을 수 있어 접어 둔다
+    const main = rows.filter(({ p }) => p.tier !== 3), practice = rows.filter(({ p }) => p.tier === 3);
+    const list = `<ul class="pool">${main.map(({ p, pi }) => poolRow(p, pi)).join('')}</ul>${practice.length
+      ? `<details class="practice"><summary class="small muted">연습 ${practice.length}개</summary><ul class="pool">${practice.map(({ p, pi }) => poolRow(p, pi)).join('')}</ul></details>` : ''}`;
     return role === m.role
       ? `<div class="pool-group"><div class="pool-head">${head}</div>${list}</div>`
       : `<details class="pool-group"><summary class="pool-head">${head}</summary>${list}</details>`;
@@ -586,7 +590,7 @@ async function main() {
   S.meta = meta?.games ? meta : null;
   S.collected = collected?.members?.length ? collected : null;
   // 처음 열었거나, 수집 데이터로 만든 팀인데 더 새 수집 결과가 있으면 다시 채운다(상대하기 싫은 챔피언·경계 목록은 유지)
-  const newer = S.collected && S.team.collectedAt && S.collected.updatedAt > S.team.collectedAt;
+  const newer = S.collected && S.team.collectedAt && (S.collected.updatedAt > S.team.collectedAt || S.team.poolVersion !== POOL_VERSION);
   if (S.collected && (S.fresh || newer)) { S.team = teamFromCollected(S.collected, S.champMap, S.team, S.meta); save(); }
   render();
   if (S.toast) toast(S.toast);
