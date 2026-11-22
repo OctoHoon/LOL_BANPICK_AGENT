@@ -12,8 +12,8 @@ export const ROLES = [
 
 export const TIERS = {
   1: { label: '주력', score: 60 },
-  2: { label: '가능', score: 40 },
-  3: { label: '연습', score: 20 },
+  2: { label: '가능', score: 48 },
+  3: { label: '연습', score: 34 },
 };
 
 // ranked: 솔로·자유 랭크 방식(양 팀 5밴 후 1-2-2-2-2-1 픽)
@@ -297,7 +297,9 @@ export function compSummary(champIds, champMap) {
   };
 }
 
-const COMP_CAP = 20;
+// 조합·상성 규칙 합계 상한과, 라인전 상식 규칙에 곱하는 가중치
+const COMP_CAP = 30;
+export const LANE_RULE_WEIGHT = 1.5;
 
 // 상대 라이너 찾기: 상위권 통계로 추정한 포지션이 있으면 그것, 없으면 역할 태그로 대략.
 function enemyAt(role, enemyPicks, champMap, enemyPos) {
@@ -340,15 +342,16 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap, ctx = {}) {
   const eSup = enemyAt('support', enemyPicks, champMap, enemyPos);
   const eTop = enemyAt('top', enemyPicks, champMap, enemyPos);
   const roleKnown = role != null;
+  const addL = (d, r) => add(Math.round(d * LANE_RULE_WEIGHT), r);
   // 그랩·단일 CC 서포터는 상대 바텀의 기동성과 주문 방어막에 따라 효율이 크게 갈린다
   if (is('hook') && (!roleKnown || role === 'support')) {
     const bot = [eAdc, eSup].filter(Boolean);
     const slip = bot.filter((id) => hasTrait('slippery', id));
     const stuck = bot.filter((id) => hasTrait('immobile', id));
     const shield = bot.filter((id) => hasTrait('spellshield', id));
-    if (slip.length) add(-8, `상대 ${names(slip)}${eunNeun(names(slip))} 이동기·방어막으로 그랩을 피하기 쉬움`);
-    else if (stuck.length) add(5, `상대 ${names(stuck)}${eunNeun(names(stuck))} 이동기가 없어 그랩에 잘 걸림`);
-    if (shield.length && !slip.some((x) => shield.includes(x))) add(-4, `상대 ${names(shield)}의 주문 방어막이 그랩을 막음`);
+    if (slip.length) addL(-8, `상대 ${names(slip)}${eunNeun(names(slip))} 이동기·방어막으로 그랩을 피하기 쉬움`);
+    else if (stuck.length) addL(5, `상대 ${names(stuck)}${eunNeun(names(stuck))} 이동기가 없어 그랩에 잘 걸림`);
+    if (shield.length && !slip.some((x) => shield.includes(x))) addL(-4, `상대 ${names(shield)}의 주문 방어막이 그랩을 막음`);
   }
   // 서포터 상성 통념: 이니시형은 보호형을, 보호형은 마법사형을, 마법사형은 이니시형을 라인전에서 이기기 쉽다
   if (role === 'support' && eSup) {
@@ -356,24 +359,24 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap, ctx = {}) {
     if (mine >= 0 && theirs >= 0 && mine !== theirs) {
       const win = (mine + 1) % 3 === theirs;
       const txt = `${SUP_KIND[mine][1]} 서포터는 ${SUP_KIND[theirs][1]}(${nm(eSup)})에 ${win ? '라인전이 강한 편' : '라인전이 약한 편'}`;
-      add(win ? 5 : -5, txt);
+      addL(win ? 5 : -5, txt);
     }
   }
   // 원거리 탑에게 이동기 없는 근접 탑은 라인전 내내 견제당한다
-  if (role === 'top' && eTop && hasTrait('rangedTop', eTop) && is('immobileTop')) add(-5, `상대 탑 ${nm(eTop)}${eunNeun(nm(eTop))} 원거리라 이동기 없는 근접 탑이 견제당하기 쉬움`);
+  if (role === 'top' && eTop && hasTrait('rangedTop', eTop) && is('immobileTop')) addL(-5, `상대 탑 ${nm(eTop)}${eunNeun(nm(eTop))} 원거리라 이동기 없는 근접 탑이 견제당하기 쉬움`);
   // 원딜: 상대 돌진이 많으면 자체 생존기가 있는 원딜이 낫다
   if (role === 'adc' && e.dive.length >= 2) {
-    if (is('slippery')) add(3, '상대 돌진이 많아 이동기 있는 원딜이 살아남기 쉬움');
-    else if (is('immobile')) add(-3, '상대 돌진이 많은데 이동기가 없어 노려지기 쉬움');
+    if (is('slippery')) addL(3, '상대 돌진이 많아 이동기 있는 원딜이 살아남기 쉬움');
+    else if (is('immobile')) addL(-3, '상대 돌진이 많은데 이동기가 없어 노려지기 쉬움');
   }
   // 말파이트·람머스류는 평타 위주 AD를 크게 약하게 만든다
   const anti = enemyPicks.filter((id) => hasTrait('antiAA', id));
-  if (anti.length && is('aaReliant')) add(-4, `상대 ${names(anti)}${eunNeun(names(anti))} 평타 위주 AD를 크게 약하게 만듦`);
+  if (anti.length && is('aaReliant')) addL(-4, `상대 ${names(anti)}${eunNeun(names(anti))} 평타 위주 AD를 크게 약하게 만듦`);
   // 투사체 위주 상대에는 바람 장막류
   const proj = enemyPicks.filter((id) => hasTrait('projectile', id));
-  if (proj.length >= 2 && is('windwall')) add(4, `상대 주요 피해가 투사체(${names(proj)})라 막는 기술 효율이 큼`);
+  if (proj.length >= 2 && is('windwall')) addL(4, `상대 주요 피해가 투사체(${names(proj)})라 막는 기술 효율이 큼`);
   // 상대 CC가 많으면 CC 면역·해제 기술 가치가 커진다
-  if (e.cc.length >= 4 && is('ccImmune')) add(3, `상대 CC ${e.cc.length}명이라 CC 면역·해제 기술 가치가 큼`);
+  if (e.cc.length >= 4 && is('ccImmune')) addL(3, `상대 CC ${e.cc.length}명이라 CC 면역·해제 기술 가치가 큼`);
   if (e.count >= 3 && e.ap < 1 && champMap.get(champ)?.front) add(3, `상대가 AD 위주(AD ${e.ad}, AP ${e.ap})라 방어력 아이템만으로 버티기 좋음`);
   if (e.count >= 3 && e.ad < 1 && champMap.get(champ)?.front) add(3, `상대가 AP 위주(AD ${e.ad}, AP ${e.ap})라 마법 저항 아이템만으로 버티기 좋음`);
 
