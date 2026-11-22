@@ -232,7 +232,7 @@ test('조합 색깔 판정과 색깔 대응', async () => {
   assert.equal(compSummary(['Ahri'], m).cc.length, 1);
   assert.equal(compSummary(['Ahri'], champMap).cc.length, 0);
   // 가감점 상한
-  assert.ok(compReasons('Lulu', ['Zed', 'Khazix', 'Vi', 'Talon', 'Jinx'], ['Jinx'], champMap).score <= 15);
+  assert.ok(compReasons('Lulu', ['Zed', 'Khazix', 'Vi', 'Talon', 'Jinx'], ['Jinx'], champMap).score <= 20);
 });
 
 test('성향 등급 파싱', async () => {
@@ -321,4 +321,18 @@ test('그랩 서포터는 상대 원딜 기동성에 따라 가감', () => {
   assert.ok(compReasons('Blitzcrank', ['Jhin'], [], champMap).score > 0);
   assert.ok(compReasons('Blitzcrank', ['Jhin', 'Morgana'], [], champMap).reasons.some((x) => x.includes('주문 방어막')));
   assert.equal(compReasons('Lulu', ['Ezreal'], [], champMap).score, 0);
+});
+
+test('라인전 기본 상성 규칙', () => {
+  // 서포터 삼각 상성
+  const r1 = compReasons('Leona', ['Jinx', 'Soraka'], [], champMap, { role: 'support' });
+  assert.ok(r1.reasons.some((x) => x.includes('이니시형 서포터는 보호형(소라카)에 라인전이 강한 편')));
+  const r2 = compReasons('Leona', ['Jinx', 'Xerath'], [], champMap, { role: 'support', enemyPos: { Jinx: 'adc', Xerath: 'support' } });
+  assert.ok(r2.reasons.some((x) => x.includes('라인전이 약한 편')));
+  // 원거리 탑 상대 근접 탑
+  assert.ok(compReasons('Ornn', ['Teemo'], [], champMap, { role: 'top', enemyPos: { Teemo: 'top' } }).score < 0);
+  // 그랩은 서포터일 때만, 상대 바텀 기준
+  assert.equal(compReasons('Blitzcrank', ['Graves'], [], champMap, { role: 'support', enemyPos: { Graves: 'jungle' } }).score, 0);
+  // 투사체 조합 상대 바람 장막
+  assert.ok(compReasons('Yasuo', ['Ezreal', 'Xerath'], [], champMap, { role: 'mid' }).reasons.some((x) => x.includes('투사체')));
 });

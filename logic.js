@@ -233,7 +233,7 @@ export function recommendPicks(state, champMap, limit = 8, meta = null, opts = {
       const mjWhy = mj && MIDJG_MAP.get(role === 'mid' ? `${p.champ}|${mj}` : `${mj}|${p.champ}`);
       if (mjWhy) { score += 5; reasons.push(`유명 미드·정글 조합: ${champMap.get(mj)?.name ?? mj}와 (${mjWhy})`); }
 
-      const cr = compReasons(p.champ, enemyPicks, ourPicks.map((x) => x.champ), champMap);
+      const cr = compReasons(p.champ, enemyPicks, ourPicks.map((x) => x.champ), champMap, { role, enemyPos });
       score += cr.score;
       reasons.push(...cr.reasons);
 
@@ -297,9 +297,25 @@ export function compSummary(champIds, champMap) {
   };
 }
 
-const COMP_CAP = 15;
+const COMP_CAP = 20;
 
-export function compReasons(champ, enemyPicks, ourPicks, champMap) {
+// 상대 라이너 찾기: 상위권 통계로 추정한 포지션이 있으면 그것, 없으면 역할 태그로 대략.
+function enemyAt(role, enemyPicks, champMap, enemyPos) {
+  const byPos = Object.entries(enemyPos || {}).find(([, r]) => r === role)?.[0];
+  if (byPos) return byPos;
+  const tag = { adc: 'Marksman', support: 'Support' }[role];
+  if (!tag) return null;
+  const free = enemyPicks.filter((id) => !enemyPos?.[id]);
+  return free.find((id) => champMap.get(id)?.tags?.[0] === tag)
+    || (role === 'support' ? free.find((id) => supKind(id) >= 0 && champMap.get(id)?.tags?.includes('Support')) : null)
+    || null;
+}
+
+const SUP_KIND = [['supEngage', '이니시형'], ['supEnchanter', '보호형'], ['supMage', '마법사형']];
+const supKind = (id) => SUP_KIND.findIndex(([t]) => hasTrait(t, id));
+
+export function compReasons(champ, enemyPicks, ourPicks, champMap, ctx = {}) {
+  const { role = null, enemyPos = {} } = ctx;
   const reasons = [];
   let score = 0;
   const nm = (id) => champMap.get(id)?.name || id;
@@ -319,15 +335,42 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap) {
   if (e.identities.includes('protect') && is('poke')) add(5, '상대 캐리 보호 조합은 멀리서 깎아 내는 포킹에 약함');
   if (e.hypercarry.length && (is('dive') || is('pick'))) add(4, `상대 후반 캐리(${names(e.hypercarry)})를 노리기 좋음`);
   if (e.identities.includes('split') && (is('engage') || is('aoe'))) add(3, '상대가 스플릿하는 동안 4대5 한타 강제');
-  // 그랩·단일 CC 서포터는 상대 원딜 기동성에 따라 효율이 크게 갈린다
-  if (is('hook')) {
-    const slip = enemyPicks.filter((id) => hasTrait('slippery', id));
-    const stuck = enemyPicks.filter((id) => hasTrait('immobile', id));
-    const shield = enemyPicks.filter((id) => hasTrait('spellshield', id));
+  // ----- 라인전 기본 상성(롤 상식) -----
+  const eAdc = enemyAt('adc', enemyPicks, champMap, enemyPos);
+  const eSup = enemyAt('support', enemyPicks, champMap, enemyPos);
+  const eTop = enemyAt('top', enemyPicks, champMap, enemyPos);
+  const roleKnown = role != null;
+  // 그랩·단일 CC 서포터는 상대 바텀의 기동성과 주문 방어막에 따라 효율이 크게 갈린다
+  if (is('hook') && (!roleKnown || role === 'support')) {
+    const bot = [eAdc, eSup].filter(Boolean);
+    const slip = bot.filter((id) => hasTrait('slippery', id));
+    const stuck = bot.filter((id) => hasTrait('immobile', id));
+    const shield = bot.filter((id) => hasTrait('spellshield', id));
     if (slip.length) add(-8, `상대 ${names(slip)}${eunNeun(names(slip))} 이동기·방어막으로 그랩을 피하기 쉬움`);
     else if (stuck.length) add(5, `상대 ${names(stuck)}${eunNeun(names(stuck))} 이동기가 없어 그랩에 잘 걸림`);
     if (shield.length && !slip.some((x) => shield.includes(x))) add(-4, `상대 ${names(shield)}의 주문 방어막이 그랩을 막음`);
   }
+  // 서포터 상성 통념: 이니시형은 보호형을, 보호형은 마법사형을, 마법사형은 이니시형을 라인전에서 이기기 쉽다
+  if (role === 'support' && eSup) {
+    const mine = supKind(champ), theirs = supKind(eSup);
+    if (mine >= 0 && theirs >= 0 && mine !== theirs) {
+      const win = (mine + 1) % 3 === theirs;
+      const txt = `${SUP_KIND[mine][1]} 서포터는 ${SUP_KIND[theirs][1]}(${nm(eSup)})에 ${win ? '라인전이 강한 편' : '라인전이 약한 편'}`;
+      add(win ? 5 : -5, txt);
+    }
+  }
+  // 원거리 탑에게 이동기 없는 근접 탑은 라인전 내내 견제당한다
+  if (role === 'top' && eTop && hasTrait('rangedTop', eTop) && is('immobileTop')) add(-5, `상대 탑 ${nm(eTop)}${eunNeun(nm(eTop))} 원거리라 이동기 없는 근접 탑이 견제당하기 쉬움`);
+  // 원딜: 상대 돌진이 많으면 자체 생존기가 있는 원딜이 낫다
+  if (role === 'adc' && e.dive.length >= 2) {
+    if (is('slippery')) add(3, '상대 돌진이 많아 이동기 있는 원딜이 살아남기 쉬움');
+    else if (is('immobile')) add(-3, '상대 돌진이 많은데 이동기가 없어 노려지기 쉬움');
+  }
+  // 투사체 위주 상대에는 바람 장막류
+  const proj = enemyPicks.filter((id) => hasTrait('projectile', id));
+  if (proj.length >= 2 && is('windwall')) add(4, `상대 주요 피해가 투사체(${names(proj)})라 막는 기술 효율이 큼`);
+  // 상대 CC가 많으면 CC 면역·해제 기술 가치가 커진다
+  if (e.cc.length >= 4 && is('ccImmune')) add(3, `상대 CC ${e.cc.length}명이라 CC 면역·해제 기술 가치가 큼`);
   if (e.count >= 3 && e.ap < 1 && champMap.get(champ)?.front) add(3, `상대가 AD 위주(AD ${e.ad}, AP ${e.ap})라 방어력 아이템만으로 버티기 좋음`);
   if (e.count >= 3 && e.ad < 1 && champMap.get(champ)?.front) add(3, `상대가 AP 위주(AD ${e.ad}, AP ${e.ap})라 마법 저항 아이템만으로 버티기 좋음`);
 
@@ -603,7 +646,14 @@ export function gamePlan(state, champMap, meta = null) {
   if (o.count >= 4 && (o.ap < 1 || o.ad < 1)) d.push(`우리 피해가 한쪽으로 쏠려 있습니다(${dmgLine(o)}). 상대가 방어 아이템 하나로 버틸 수 있으니 관통 아이템을 일찍 챙기세요.`);
   if (e.count >= 4 && e.ap < 1) d.push(`상대가 거의 AD입니다(${dmgLine(e)}). 앞라인은 방어력 아이템 효율이 좋습니다.`);
   if (e.count >= 4 && e.ad < 1) d.push(`상대가 거의 AP입니다(${dmgLine(e)}). 앞라인은 마법 저항력 아이템 효율이 좋습니다.`);
-  if (d.length) out.push({ title: '피해 유형', items: d });
+  // 상대 성향별 대비(아이템·시야)
+  const heal = enemy.filter((id) => TRAIT_SETS.heal.has(id));
+  if (heal.length >= 2) d.push(`상대 회복이 큽니다(${names(heal)}). 딜러 한두 명은 치유 감소 아이템을 일찍 사세요.`);
+  const stealth = enemy.filter((id) => TRAIT_SETS.stealth.has(id));
+  if (stealth.length) d.push(`상대 은신 챔피언(${names(stealth)})이 있습니다. 제어 와드와 탐지 장신구로 길목을 밝히세요.`);
+  if (e.cc.length >= 4) d.push(`상대 하드 CC가 많습니다(${e.cc.length}명). 강인함 신발이나 CC 해제 아이템을 고려하세요.`);
+  if (e.poke.length >= 2) d.push(`상대 포킹(${names(e.poke)})이 강합니다. 오브젝트 전에 체력을 지키고, 회복 수단을 챙기세요.`);
+  if (d.length) out.push({ title: '피해 유형·대비', items: d });
 
   // 라인별 상성(상위권 통계)
   if (meta) {

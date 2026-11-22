@@ -17,6 +17,11 @@
 // slippery : 이동기·주문 방어막으로 그랩을 피하기 쉬운 원딜
 // immobile : 이동기가 없어 그랩에 잘 걸리는 원딜
 // spellshield: 아군을 CC 면역으로 지키는 서포터(그랩 상대로 강함)
+// supEngage / supEnchanter / supMage: 서포터 3분류. 라인전 통념은 이니시형 > 보호형 > 마법사형 > 이니시형
+// rangedTop: 원거리 탑. immobileTop: 이동기 없는 근접 탑(원거리 탑에게 견제당하기 쉬움)
+// windwall : 투사체를 막는 기술(바람 장막 등). projectile: 주요 피해가 투사체인 챔피언
+// ccImmune : CC 면역·해제 기술이 있는 챔피언
+// heal     : 회복량이 커서 치유 감소가 필요한 챔피언. stealth: 은신 챔피언
 // cc       : 확실한 하드 CC(기절·속박·에어본 등)가 있는 챔피언. Riot 클라이언트 CC 등급(data/champ-attrs.json)이 있으면 그쪽을 우선한다.
 export const TRAITS = {
   dive: [
@@ -73,6 +78,16 @@ export const TRAITS = {
   slippery: ['Ezreal', 'Sivir', 'Kalista', 'Lucian', 'Vayne', 'Tristana', 'Samira', 'Xayah', 'Zeri', 'Corki', 'Kaisa', 'Graves', 'Nilah'],
   immobile: ['Jhin', 'Aphelios', 'Jinx', 'Ashe', 'KogMaw', 'Varus', 'MissFortune', 'Senna', 'Caitlyn', 'Ziggs', 'Twitch', 'Swain'],
   spellshield: ['Morgana', 'Sivir'],
+  supEngage: ['Alistar', 'Amumu', 'Blitzcrank', 'Leona', 'Maokai', 'Nautilus', 'Pyke', 'Rakan', 'Rell', 'Thresh'],
+  supEnchanter: ['Janna', 'Karma', 'Lulu', 'Milio', 'Nami', 'Renata', 'Seraphine', 'Sona', 'Soraka', 'Taric', 'Yuumi'],
+  supMage: ['Brand', 'Hwei', 'Lux', 'Morgana', 'Neeko', 'Swain', 'Velkoz', 'Xerath', 'Zilean', 'Zyra'],
+  rangedTop: ['Akshan', 'Gnar', 'Heimerdinger', 'Jayce', 'Kayle', 'Kennen', 'Quinn', 'Teemo', 'Varus', 'Vayne'],
+  immobileTop: ['Chogath', 'Darius', 'DrMundo', 'Garen', 'Illaoi', 'Mordekaiser', 'Nasus', 'Ornn', 'Sett', 'Sion', 'Yorick'],
+  windwall: ['Yasuo', 'Samira', 'Braum'],
+  projectile: ['Aphelios', 'Ashe', 'Caitlyn', 'Corki', 'Ezreal', 'Jhin', 'Jinx', 'Lux', 'MissFortune', 'Sivir', 'Varus', 'Velkoz', 'Xerath'],
+  ccImmune: ['Alistar', 'Gangplank', 'Milio', 'Morgana', 'Olaf', 'Sivir'],
+  heal: ['Aatrox', 'Briar', 'DrMundo', 'Fiddlesticks', 'Illaoi', 'Milio', 'Nami', 'Olaf', 'Sona', 'Soraka', 'Swain', 'Sylas', 'Vladimir', 'Warwick', 'Yuumi'],
+  stealth: ['Akshan', 'Evelynn', 'Khazix', 'MonkeyKing', 'Pyke', 'Rengar', 'Shaco', 'Talon', 'Twitch', 'Vayne'],
   cc: [
     'Alistar', 'Amumu', 'Annie', 'Ashe', 'Blitzcrank', 'Braum', 'Galio', 'Gragas', 'JarvanIV', 'Kennen',
     'Leona', 'Lissandra', 'Malphite', 'Maokai', 'Morgana', 'Nautilus', 'Neeko', 'Nunu', 'Ornn', 'Poppy', 'Rakan',
