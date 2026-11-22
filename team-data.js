@@ -61,14 +61,14 @@ export function teamFromCollected(collected, champMap, base, meta = null) {
       riotId: m.riotId || '',
       role,
       pool,
-      hates: prev.hates || [],
+      hates: base?.example ? [] : (prev.hates || []), // 예시 팀의 가짜 취향은 실제 멤버에게 넘기지 않는다
       collected: { games: m.games, withTeam: m.withTeam, roles: m.roles },
     };
   });
   return {
     side: base?.side || 'blue',
     format: base?.format || 'ranked',
-    threats: base?.threats || [],
+    threats: base?.example ? [] : (base?.threats || []),
     members,
     collectedAt: collected.updatedAt,
   };
