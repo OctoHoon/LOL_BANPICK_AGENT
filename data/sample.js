@@ -5,7 +5,7 @@ export const SAMPLE_TEAM = {
   format: 'ranked',
   example: true,
   members: [
-    { id: 'm1', name: 'ヨイショト', riotId: 'ヨイショト#hooon', role: 'top', hates: ['Fiora', 'Teemo'],
+    { id: 'm1', name: '요이쇼또', riotId: '요이쇼또#hooon', role: 'top', hates: ['Fiora', 'Teemo'],
       pool: [{ champ: 'Ornn', tier: 1 }, { champ: 'KSante', tier: 1 }, { champ: 'Renekton', tier: 2 }, { champ: 'Gnar', tier: 3 }] },
     { id: 'm2', name: '야리야', riotId: '야리야#KR1', role: 'jungle', hates: ['Khazix'],
       pool: [{ champ: 'LeeSin', tier: 1 }, { champ: 'Vi', tier: 1 }, { champ: 'Sejuani', tier: 2 }, { champ: 'Viego', tier: 3 }] },

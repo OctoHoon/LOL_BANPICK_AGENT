@@ -241,3 +241,32 @@ test('성향 등급 파싱', async () => {
     { cc: 2, mob: 3, dur: 1, dmgR: 3, util: 1, dmgType: 'AP' });
   assert.equal(pickAttrs({}), null);
 });
+
+test('이번 판 라인을 정하면 그 라인만, 스왑 허용 시 맞바꾸기 제안', () => {
+  const t = structuredClone(team);
+  t.members[0].pool.push({ champ: 'Syndra', role: 'mid', tier: 1 });
+  t.members[2].pool.push({ champ: 'Gnar', role: 'top', tier: 2 });
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  const lineup = { m1: 'top', m3: 'mid' };
+  const strict = rp({ team: t, actions, seq, assign: {}, lineup, allowSwap: false }, champMap, 100);
+  assert.ok(!strict.some((r) => r.memberId === 'm1' && r.role !== 'top'));
+  const swap = rp({ team: t, actions, seq, assign: {}, lineup, allowSwap: true }, champMap, 100);
+  const syn = swap.find((r) => r.champ === 'Syndra' && r.memberId === 'm1');
+  assert.ok(syn.reasons.some((x) => x.startsWith('라인 스왑: 요이쇼또 미드 ↔ Nica 탑')));
+  // 정해 둔 라인은 부 라인 감점이 없다
+  const t2 = structuredClone(team);
+  t2.members[0].pool.push({ champ: 'Syndra', role: 'mid', tier: 1 });
+  const r2 = rp({ team: t2, actions, seq, assign: {}, lineup: { m1: 'mid', m3: 'top' } }, champMap, 100);
+  assert.ok(!r2.find((r) => r.champ === 'Syndra').reasons.some((x) => x.startsWith('부 라인')));
+  assert.deepEqual(guessMember(t, 'Galio', new Set(), new Set(), { m5: 'support', m3: 'mid' }), { id: 'm3', role: 'mid' });
+});
+
+test('유명 바텀 조합 가산', () => {
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  actions[10] = 'Kaisa';
+  const recs = rp({ team, actions, seq, assign: { 10: 'm4' }, assignRole: { 10: 'adc' } }, champMap, 50);
+  const nau = recs.find((r) => r.champ === 'Nautilus');
+  assert.ok(nau.reasons.some((x) => x.startsWith('유명 바텀 조합: 카이사와')));
+});

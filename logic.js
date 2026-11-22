@@ -1,5 +1,6 @@
 // 밴픽 순서와 추천 계산. 화면 코드와 분리해 node 로도 시험할 수 있게 했다.
 import { TRAIT_SETS, IDENTITIES } from './data/traits.js';
+import { DUO_MAP } from './data/botlane.js';
 
 export const ROLES = [
   { id: 'top', label: '탑' },
@@ -138,7 +139,7 @@ export function roleShare(m) {
 // 우리 팀 픽 추천.
 // state: { team, actions, seq, assign }  assign: { stepIndex: memberId }
 export function recommendPicks(state, champMap, limit = 8, meta = null) {
-  const { team, actions, seq, assign } = state;
+  const { team, actions, seq, assign, lineup = {}, allowSwap = true } = state;
   const ours = team.side;
   const used = usedChampions(actions);
   const ourPicks = sideChampions(actions, seq, ours, 'pick').filter((s) => s.champ);
@@ -164,16 +165,29 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
   const out = [];
   for (const m of openMembers) {
     const share = roleShare(m);
+    const planned = lineup[m.id] && !takenRoles.has(lineup[m.id]) ? lineup[m.id] : null;
     const available = m.pool.filter((p) => !used.has(p.champ) && champMap.has(p.champ) && !takenRoles.has(p.role || m.role));
     for (const p of available) {
       const role = p.role || m.role;
       const roleName = ROLES.find((r) => r.id === role)?.label ?? role;
+      let swapNote = null;
+      if (planned && role !== planned) {
+        // 미리 정한 라인이 있으면 그 라인만. 스왑을 허용하면, 그 라인에 정해진 팀원이 아직 안 골랐고
+        // 그 팀원이 우리 라인 챔프폭을 갖고 있을 때만 맞바꾸기를 제안한다.
+        if (!allowSwap) continue;
+        const partner = openMembers.find((x) => x.id !== m.id && lineup[x.id] === role);
+        if (!partner || !partner.pool.some((x) => (x.role || partner.role) === planned && !used.has(x.champ))) continue;
+        swapNote = `라인 스왑: ${m.name || '팀원'} ${roleName} ↔ ${partner.name || '팀원'} ${ROLES.find((r) => r.id === planned)?.label ?? planned}`;
+      }
       const mainsLeft = available.filter((x) => x.tier === 1 && (x.role || m.role) === role).length;
       const c = champMap.get(p.champ);
       const reasons = [];
       let score = TIERS[p.tier]?.score ?? 20;
       reasons.push(`${m.name || '팀원'}의 ${roleName} ${TIERS[p.tier]?.label ?? '연습'} 챔피언`);
-      if (role !== m.role) {
+      if (swapNote) {
+        score -= 8;
+        reasons.push(swapNote);
+      } else if (role !== (planned || m.role)) {
         const sh = share[role] || 0;
         score -= Math.round((1 - sh) * 8);
         reasons.push(`부 라인 (${roleName} 비중 ${Math.round(sh * 100)}%)`);
@@ -196,6 +210,11 @@ export function recommendPicks(state, champMap, limit = 8, meta = null) {
       if (threats.has(p.champ)) { score += 6; reasons.push('경계 목록 챔피언이라 먼저 가져가면 상대 선택지가 줄어듦'); }
       if (n <= 1 && (owners.get(p.champ) || 0) >= 2) { score += 5; reasons.push('여러 팀원이 다뤄 라인을 숨기기 좋음'); }
       if (p.tier === 1 && mainsLeft === 1) { score += 4; reasons.push('남은 주력이 이것뿐이라 밴 전에 확보 권장'); }
+
+      // 널리 알려진 바텀 듀오
+      const mate = role === 'adc' ? ourByRole.support : role === 'support' ? ourByRole.adc : null;
+      const duoWhy = mate && DUO_MAP.get(role === 'adc' ? `${p.champ}|${mate}` : `${mate}|${p.champ}`);
+      if (duoWhy) { score += 5; reasons.push(`유명 바텀 조합: ${champMap.get(mate)?.name ?? mate}와 (${duoWhy})`); }
 
       const cr = compReasons(p.champ, enemyPicks, ourPicks.map((x) => x.champ), champMap);
       score += cr.score;
@@ -440,20 +459,23 @@ export function recommendBans(state, champMap, limit = 8, meta = null) {
 }
 
 // 우리 픽을 어느 팀원·라인에 배정할지 정한다. 비어 있는 라인 중 그 챔피언을 가장 잘 다루는 팀원.
-export function guessMember(team, champ, filled, takenRoles = new Set()) {
+export function guessMember(team, champ, filled, takenRoles = new Set(), lineup = {}) {
   let best = null;
   for (const m of team.members) {
     if (filled.has(m.id)) continue;
+    const planned = lineup[m.id];
     for (const p of m.pool.filter((x) => x.champ === champ)) {
       const role = p.role || m.role;
       if (takenRoles.has(role)) continue;
-      const rank = p.tier * 100 - (p.wg ?? p.games ?? 0);
+      // 라인을 미리 정했으면 그 라인 항목을 먼저 본다(스왑은 뒤로)
+      const rank = (planned && planned !== role ? 1000 : 0) + p.tier * 100 - (p.wg ?? p.games ?? 0);
       if (!best || rank < best.rank) best = { id: m.id, role, rank };
     }
   }
   if (!best) {
-    const m = team.members.find((x) => !filled.has(x.id) && !takenRoles.has(x.role)) || team.members.find((x) => !filled.has(x.id));
-    const role = m && takenRoles.has(m.role) ? ROLES.map((r) => r.id).find((r) => !takenRoles.has(r)) : m?.role;
+    const roleOf = (x) => lineup[x.id] || x.role;
+    const m = team.members.find((x) => !filled.has(x.id) && !takenRoles.has(roleOf(x))) || team.members.find((x) => !filled.has(x.id));
+    const role = m && takenRoles.has(roleOf(m)) ? ROLES.map((r) => r.id).find((r) => !takenRoles.has(r)) : m && roleOf(m);
     return m ? { id: m.id, role } : null;
   }
   return { id: best.id, role: best.role };

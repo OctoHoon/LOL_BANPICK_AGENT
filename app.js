@@ -14,14 +14,14 @@ const roleLabel = (id) => ROLES.find((r) => r.id === id)?.label ?? '';
 
 const S = {
   champs: [], champMap: new Map(), source: '', meta: null, collected: null, fresh: false,
-  team: null, actions: [], assign: {}, assignRole: {},
+  team: null, actions: [], assign: {}, assignRole: {}, lineup: {}, allowSwap: true,
   tab: 'draft', search: '', tag: '', poolOnly: false, toast: '',
 };
 
 // ---------- 저장 ----------
 function seq() { return draftSequence(S.team.format); }
 function save() {
-  try { localStorage.setItem(STORE, JSON.stringify({ team: S.team, actions: S.actions, assign: S.assign, assignRole: S.assignRole, tab: S.tab })); } catch { /* 무시 */ }
+  try { localStorage.setItem(STORE, JSON.stringify({ team: S.team, actions: S.actions, assign: S.assign, assignRole: S.assignRole, lineup: S.lineup, allowSwap: S.allowSwap, tab: S.tab })); } catch { /* 무시 */ }
 }
 function b64encode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj));
@@ -51,6 +51,8 @@ function restore() {
       S.actions = saved.actions?.length === seq().length ? saved.actions : Array(seq().length).fill(null);
       S.assign = saved.assign || {};
       S.assignRole = saved.assignRole || {};
+      S.lineup = saved.lineup || {};
+      S.allowSwap = saved.allowSwap ?? true;
       S.tab = saved.tab || 'draft';
       return;
     }
@@ -206,7 +208,7 @@ function renderReco() {
   }
   const s = seq()[cur];
   const ours = s.side === S.team.side;
-  const st = { team: S.team, actions: S.actions, seq: seq(), assign: S.assign, assignRole: S.assignRole };
+  const st = { team: S.team, actions: S.actions, seq: seq(), assign: S.assign, assignRole: S.assignRole, lineup: S.lineup, allowSwap: S.allowSwap };
   let body = '';
   if (s.type === 'ban') {
     const { list, skipped } = recommendBans(st, S.champMap, 8, S.meta);
@@ -244,8 +246,26 @@ function renderGrid() {
 
 const TAGS = [['', '전체'], ['Fighter', '전사'], ['Tank', '탱커'], ['Mage', '마법사'], ['Assassin', '암살자'], ['Marksman', '원거리'], ['Support', '서포터']];
 
+// 이번 판에 누가 어느 라인을 설지. 비워 두면 주 라인 기준으로 자동 추천한다.
+function renderLineup() {
+  const set = Object.values(S.lineup).filter(Boolean).length;
+  return `
+  <section class="lineup" aria-label="이번 판 라인">
+    <span class="lineup-title">이번 판 라인</span>
+    ${S.team.members.map((m) => `
+      <label class="lineup-item"><span>${esc(m.name || '이름 없음')}</span>
+        <select data-lineup="${m.id}">
+          <option value="">자동 (${esc(roleLabel(m.role))})</option>
+          ${ROLES.map((r) => `<option value="${r.id}" ${S.lineup[m.id] === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}
+        </select>
+      </label>`).join('')}
+    <label class="chk" title="상대 픽에 따라 아직 안 고른 두 팀원이 라인을 맞바꾸는 추천도 보여 줍니다"><input id="allowSwap" type="checkbox" ${S.allowSwap ? 'checked' : ''} ${set ? '' : 'disabled'}> 라인 스왑 제안</label>
+  </section>`;
+}
+
 function renderDraft() {
   $('#main').innerHTML = `
+  ${renderLineup()}
   <div class="draft">
     ${renderSide('blue')}
     <section class="center">
@@ -276,7 +296,7 @@ function fillSlot(champ, memberId, role) {
     if (memberId && role && !filled.has(memberId) && !taken.has(role)) {
       S.assign[cur] = memberId; S.assignRole[cur] = role;
     } else {
-      const g = guessMember(S.team, champ, filled, taken);
+      const g = guessMember(S.team, champ, filled, taken, S.lineup);
       if (g) { S.assign[cur] = g.id; S.assignRole[cur] = g.role; }
     }
   }
@@ -473,6 +493,15 @@ function bind() {
       save(); render(); return;
     }
     if (t.id === 'tag') { S.tag = t.value; renderGrid(); return; }
+    if (t.dataset.lineup) {
+      // 같은 라인을 다른 팀원이 이미 맡고 있으면 서로 맞바꾼다
+      const id = t.dataset.lineup, prev = S.lineup[id] || '';
+      const other = t.value && Object.keys(S.lineup).find((k) => k !== id && S.lineup[k] === t.value);
+      if (other) { if (prev) S.lineup[other] = prev; else delete S.lineup[other]; }
+      if (t.value) S.lineup[id] = t.value; else delete S.lineup[id];
+      save(); renderDraft(); return;
+    }
+    if (t.id === 'allowSwap') { S.allowSwap = t.checked; save(); renderDraft(); return; }
     if (t.id === 'poolOnly') { S.poolOnly = t.checked; renderGrid(); return; }
     if (t.dataset.assign != null) { S.assign[t.dataset.assign] = t.value; save(); renderDraft(); return; }
     if (t.dataset.assignRole != null) { S.assignRole[t.dataset.assignRole] = t.value; save(); renderDraft(); return; }

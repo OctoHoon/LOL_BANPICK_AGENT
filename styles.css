@@ -168,3 +168,8 @@ details.pool-group > summary { cursor: pointer; padding: 2px 0; }
 .add-row select { flex: none; }
 .add-row .add { flex: 1 1 0; width: 0; }
 .ident { color: var(--gold); font-weight: 600; }
+.lineup { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.lineup-title { font-weight: 600; font-size: 13px; }
+.lineup-item { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.lineup-item span { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lineup-item select { padding: 4px 6px; font-size: 13px; }
