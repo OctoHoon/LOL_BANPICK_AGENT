@@ -12,7 +12,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = process.env.BANPICK_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const KEY = process.env.RIOT_API_KEY;
+// 시크릿에 따옴표·공백·'RIOT_API_KEY=' 같은 군더더기가 섞여 들어가는 경우가 많아 정리한다.
+const KEY = (process.env.RIOT_API_KEY || '').trim().replace(/^RIOT_API_KEY\s*=\s*/, '').replace(/^["']|["']$/g, '').trim();
 const BASE_OVERRIDE = process.env.RIOT_BASE_OVERRIDE; // 시험용 가짜 서버 주소
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -56,8 +57,11 @@ export function makeClient(cfg) {
       const res = await fetch(host(kind) + p, { headers: { 'X-Riot-Token': KEY } });
       if (res.ok) return res.json();
       if (res.status === 404) return null;
-      if (res.status === 401 || res.status === 403) {
-        throw new RiotError(`Riot API가 키를 거부했습니다(${res.status}). 개발용 키는 24시간마다 만료되니 새 키를 받아 다시 넣어 주세요.`);
+      if (res.status === 401) {
+        throw new RiotError(`Riot API가 키를 인식하지 못했습니다(401). 키 형식 확인: 길이 ${KEY.length}자, RGAPI- 로 시작 ${KEY.startsWith('RGAPI-') ? '예' : '아니오'}.`);
+      }
+      if (res.status === 403) {
+        throw new RiotError('Riot API가 키를 거부했습니다(403). 키가 만료됐거나 잘못된 키입니다. 개발용 키는 24시간마다 만료됩니다.');
       }
       if (res.status === 429) {
         const sec = Number(res.headers.get('retry-after') || 10);
