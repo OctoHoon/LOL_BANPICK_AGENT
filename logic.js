@@ -233,6 +233,11 @@ export function recommendPicks(state, champMap, limit = 8, meta = null, opts = {
       const mjWhy = mj && MIDJG_MAP.get(role === 'mid' ? `${p.champ}|${mj}` : `${mj}|${p.champ}`);
       if (mjWhy) { score += 5; reasons.push(`유명 미드·정글 조합: ${champMap.get(mj)?.name ?? mj}와 (${mjWhy})`); }
 
+      const laneKnown = laneKnownFor(role, enemyPicks, champMap, enemyPos);
+      const dr = draftOrderReasons(p.champ, role, laneKnown, enemyLeft, ourPicks.length);
+      score += dr.score;
+      reasons.push(...dr.reasons);
+
       const cr = compReasons(p.champ, enemyPicks, ourPicks.map((x) => x.champ), champMap, { role, enemyPos });
       score += cr.score;
       reasons.push(...cr.reasons);
@@ -396,6 +401,33 @@ export function compReasons(champ, enemyPicks, ourPicks, champMap, ctx = {}) {
   return { score: Math.max(-COMP_CAP, Math.min(COMP_CAP, score)), reasons };
 }
 
+// ---------- 픽 순서(블라인드 픽·카운터 픽) ----------
+// 정석: 선픽은 누가 와도 버티는 챔피언으로, 상대가 보고 카운터하기 쉬운 챔피언과 솔로 라인(탑·미드)은 뒤로 미룬다.
+export function laneKnownFor(role, enemyPicks, champMap, enemyPos) {
+  if (Object.values(enemyPos || {}).includes(role)) return true;
+  // 통계 없이 판단할 수 있는 건 원딜·서포터 정도(역할 태그)
+  if (role === 'adc' || role === 'support') return !!enemyAt(role, enemyPicks, champMap, enemyPos);
+  return false;
+}
+
+export function draftOrderReasons(champ, role, laneKnown, enemyLeft, ourCount) {
+  const reasons = [];
+  let score = 0;
+  if (laneKnown || enemyLeft <= 0) return { score, reasons };
+  const exposure = Math.min(1, enemyLeft / 5);
+  if (hasTrait('counterpick', champ)) {
+    const d = Math.round(12 * exposure);
+    if (d) { score -= d; reasons.push('블라인드 픽에 약함: 상대가 보고 받아치기 쉬워 뒤에 고르는 게 좋음'); }
+  } else if (hasTrait('blindSafe', champ)) {
+    const d = Math.round(6 * exposure);
+    if (d) { score += d; reasons.push('선픽으로 무난: 불리한 상대가 적고 어떤 조합에도 들어감'); }
+  }
+  if ((role === 'top' || role === 'mid') && enemyLeft >= 3 && ourCount <= 2) {
+    score -= 3; reasons.push('솔로 라인은 상대를 보고 고르도록 뒤로 미루는 게 정석');
+  }
+  return { score, reasons };
+}
+
 // 메타 통계로 매기는 가감점: 포지션 승률, 상대 라이너 상성, 바텀 듀오 궁합, 블라인드 픽 위험
 export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ourByRole, used = new Set(), enemyAll = null) {
   let score = 0;
@@ -412,26 +444,37 @@ export function statReasons(meta, champMap, role, champ, enemyPos, enemyLeft, ou
     if (Math.abs(d) >= 1.5) reasons.push(`상위권 ${roleName} 승률 ${pct(pr[1] / pr[0])} (${pr[0]}판)`);
   }
   if (total >= 50 && (pr?.[0] || 0) / total < 0.05) { score -= 5; reasons.push(`상위권에서 ${roleName}로는 드문 픽`); }
+  // 첫 픽 단계에서 상위권 픽밴률이 높은 챔피언은 먼저 가져갈 가치가 있다(상대에게 넘어가거나 밴되기 전에)
+  if (enemyLeft >= 4 && meta.games >= 500) {
+    const c = meta.champs?.[champ];
+    const g = Object.values(c?.pos || {}).reduce((a, [x]) => a + x, 0);
+    const presence = c ? (g + (c.bans || 0)) / meta.games : 0;
+    if (presence >= 0.25) { score += 4; reasons.push(`우선순위 픽: 상위권 픽밴률 ${pct(presence)}`); }
+  }
 
   const enemyHere = Object.entries(enemyPos).find(([, p]) => p === role)?.[0];
   if (enemyHere) {
+    // 상대 라이너를 보고 고르는 카운터 픽. 표본이 쌓일수록 크게 반영한다.
     const v = laneStat(meta, role, champ, enemyHere);
-    if (v && v.games >= 3) {
-      const wr = smoothWr(v.games, v.wins, 30);
-      const d = clamp((wr - 0.5) * 150, -12, 12);
+    if (v && v.games >= 5) {
+      // 맞대결은 표본이 쉽게 작아서 50% 경기 60판을 더한 것처럼 강하게 보정한다
+      const wr = smoothWr(v.games, v.wins, 60);
+      const d = clamp((wr - 0.5) * 180, -15, 15);
       score += d;
-      reasons.push(`상대 ${roleName} ${nm(enemyHere)} 상대 승률 ${pct(v.wins / v.games)} (${v.games}판)`);
+      const tag = d >= 4 ? '카운터 픽: ' : d <= -4 ? '역카운터 주의: ' : '';
+      reasons.push(`${tag}상대 ${roleName} ${nm(enemyHere)} 상대 승률 ${pct(v.wins / v.games)} (${v.games}판)`);
     }
   } else if (enemyLeft > 0) {
-    // 상대 라이너가 아직 안 나왔을 때: 표본이 충분하고 크게 불리한 상대가 몇이나 되는지
+    // 상대 라이너가 아직 안 나왔을 때(블라인드 픽): 크게 불리한 상대가 많을수록, 상대가 고를 차례가 많이 남았을수록 감점
+    const exposure = Math.min(1, enemyLeft / 5);
     const vs = meta.matchups?.[role]?.[champ] || {};
     const bad = Object.entries(vs)
       .filter(([e, [g, w]]) => g >= 10 && smoothWr(g, w, 30) < 0.46 && champMap.has(e) && !used.has(e))
       .sort((a, b) => smoothWr(a[1][0], a[1][1]) - smoothWr(b[1][0], b[1][1]))
-      .slice(0, 3);
+      .slice(0, 4);
     if (bad.length >= 2) {
-      score -= bad.length;
-      reasons.push(`카운터 주의: ${bad.map(([e]) => nm(e)).join(', ')}`);
+      score -= Math.round(bad.length * 2.5 * exposure);
+      reasons.push(`카운터 주의(상대가 보고 고를 수 있음): ${bad.map(([e]) => nm(e)).join(', ')}`);
     }
   }
 

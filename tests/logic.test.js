@@ -336,3 +336,18 @@ test('라인전 기본 상성 규칙', () => {
   // 투사체 조합 상대 바람 장막
   assert.ok(compReasons('Yasuo', ['Ezreal', 'Xerath'], [], champMap, { role: 'mid' }).reasons.some((x) => x.includes('투사체')));
 });
+
+test('블라인드 픽과 카운터 픽', async () => {
+  const { draftOrderReasons } = await import('../logic.js');
+  // 선픽 블리츠는 감점, 상대 바텀을 본 뒤에는 감점 없음
+  assert.ok(draftOrderReasons('Blitzcrank', 'support', false, 5, 0).score <= -12);
+  assert.equal(draftOrderReasons('Blitzcrank', 'support', true, 2, 3).score, 0);
+  assert.ok(draftOrderReasons('Nautilus', 'support', false, 5, 0).score > 0);
+  assert.ok(draftOrderReasons('Ahri', 'mid', false, 5, 0).reasons.some((x) => x.includes('솔로 라인')));
+  // 상대 라이너가 보이면 카운터 픽 표시
+  const seq = draftSequence('ranked');
+  const actions = Array(seq.length).fill(null);
+  actions[11] = 'Yasuo';
+  const ahri = rp({ team, actions, seq, assign: {} }, champMap, 50, META).find((r) => r.champ === 'Ahri');
+  assert.ok(ahri.reasons.some((x) => x.startsWith('카운터 픽: 상대 미드 야스오')));
+});

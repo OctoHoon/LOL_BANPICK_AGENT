@@ -23,6 +23,8 @@
 // ccImmune : CC 면역·해제 기술이 있는 챔피언
 // heal     : 회복량이 커서 치유 감소가 필요한 챔피언. stealth: 은신 챔피언
 // antiAA   : 방어력·공격 속도 감소로 평타 위주 AD를 크게 약하게 만드는 챔피언. aaReliant: 평타 의존이 큰 AD
+// blindSafe: 선픽(상대 라이너를 모르고 고를 때)으로 무난한 챔피언. 불리한 상대가 적고 조합을 가리지 않음
+// counterpick: 특정 상대를 노리는 픽이라 먼저 공개하면 받아치기 쉬운 챔피언
 // cc       : 확실한 하드 CC(기절·속박·에어본 등)가 있는 챔피언. Riot 클라이언트 CC 등급(data/champ-attrs.json)이 있으면 그쪽을 우선한다.
 export const TRAITS = {
   dive: [
@@ -91,6 +93,18 @@ export const TRAITS = {
   stealth: ['Akshan', 'Evelynn', 'Khazix', 'MonkeyKing', 'Pyke', 'Rengar', 'Shaco', 'Talon', 'Twitch', 'Vayne'],
   antiAA: ['Malphite', 'Rammus', 'Teemo'],
   aaReliant: ['Belveth', 'Jax', 'KogMaw', 'MasterYi', 'Tryndamere', 'Twitch', 'Vayne', 'Yasuo', 'Yone', 'Kindred', 'Xayah'],
+  blindSafe: [
+    'Ahri', 'Azir', 'Orianna', 'Taliyah', 'Viktor', 'Syndra', 'Galio',
+    'Sejuani', 'JarvanIV', 'Vi', 'Viego', 'Maokai', 'XinZhao', 'Skarner',
+    'Ornn', 'KSante', 'Aatrox', 'Renekton', 'Jax', 'Gnar',
+    'Kaisa', 'Ezreal', 'Varus', 'Xayah', 'Sivir', 'Jhin',
+    'Nautilus', 'Rakan', 'Rell', 'Braum', 'Karma', 'Alistar', 'Renata',
+  ],
+  counterpick: [
+    'Blitzcrank', 'Pyke', 'Teemo', 'Malphite', 'Rammus', 'Poppy', 'Kassadin', 'Fizz', 'Quinn', 'Akshan',
+    'Heimerdinger', 'Kayle', 'Nasus', 'Cassiopeia', 'Anivia', 'Vayne', 'Yasuo', 'Tryndamere', 'Pantheon',
+    'Morgana', 'Janna', 'Zilean',
+  ],
   cc: [
     'Alistar', 'Amumu', 'Annie', 'Ashe', 'Blitzcrank', 'Braum', 'Galio', 'Gragas', 'JarvanIV', 'Kennen',
     'Leona', 'Lissandra', 'Malphite', 'Maokai', 'Morgana', 'Nautilus', 'Neeko', 'Nunu', 'Ornn', 'Poppy', 'Rakan',
